@@ -1,0 +1,11 @@
+# Real Nova-tracer scanner dependencies
+#
+# Installation options:
+# 1. Full NOVA:            docker build --build-arg NOVA_MODE=full -t claude-skill-sandbox:full .
+# 2. NOVA record-only:     docker build --build-arg NOVA_MODE=lite -t claude-skill-sandbox .
+# 3. No NOVA:              docker build --build-arg NOVA_MODE=none -t claude-skill-sandbox .
+
+# Provides the `nova` Python package imported by nova-tracer's
+# post-tool-nova-guard.py. Its transitive dependencies supply the keyword and
+# semantic scanner implementation.
+nova-hunting

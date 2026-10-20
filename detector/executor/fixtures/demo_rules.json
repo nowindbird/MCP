@@ -1,0 +1,50 @@
+{
+  "repo": "fixture_demo",
+  "version": "2.0",
+  "source": {
+    "facts_count": 8,
+    "claim_count": 18,
+    "alignment_rate": 1.0,
+    "security_conflict_rate": 0.0,
+    "verdict_signal": "CLEAN"
+  },
+  "allowlist": {
+    "network_endpoints": ["*"],
+    "file_paths": [],
+    "commands": [],
+    "env_vars": ["APP_HASH", "APP_ID", "LOG_LEVEL", "MCP_ADDR", "TG_PHONE", "TG_SESSION_DIR"]
+  },
+  "blocklist": {
+    "dangerous_patterns": [
+      "nc\\s+-[a-z]*e\\b",
+      "netcat\\s+-[a-z]*e\\b",
+      "/dev/tcp/",
+      "bash\\s+-i\\s+>&",
+      "Invoke-PowerShellTcp",
+      "PowerCat",
+      "curl\\s+[^\\s]+\\s*\\|\\s*(?:ba)?sh",
+      "wget\\s+[^\\s]+\\s*\\|\\s*(?:ba)?sh",
+      "Invoke-WebRequest\\s+[^\\s]+\\|\\s*iex",
+      "\\|\\s*powershell",
+      "base64\\s*\\(\\s*--decode",
+      "b64decode\\s*\\(.*\\)\\s*\\n?\\s*(?:exec|eval)",
+      "marshal\\.loads\\s*\\(.*\\).*(?:exec|eval)",
+      "chmod\\s+777",
+      "rm\\s+-rf\\s+/",
+      "sudo\\s+.*(?:cat|chmod|chown)"
+    ],
+    "honeypot_indicators": [
+      "honeypot_fake_key_do_not_use_sk_1234567890abcdef",
+      "/tmp/honeypot_ssh_key_never_exist",
+      "AKIAIOSFODNN7EXAMPLE",
+      "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+    ]
+  },
+  "violation_actions": {
+    "conflict_rate_threshold": 0.3,
+    "conflict_rate_high": 0.6,
+    "auto_block_categories": ["credential", "obfuscation"],
+    "review_categories": ["subprocess", "file_access"],
+    "honeypot_protected": true
+  }
+}

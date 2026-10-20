@@ -1,0 +1,50 @@
+# ============================================================
+# 目标：仓库保持轻量、可直接推送 GitHub
+#   - 单个文件不得超过 100MB（GitHub 硬限制）
+#   - 模型权重/数据集缓存/运行产物一律不入库，改为"可重新获取"
+# ============================================================
+
+# ---- 模型与适配器权重（从 Hugging Face 重新下载，或按脚本重新训练）----
+mcp_doc_finetune/**/*.safetensors
+mcp_doc_finetune/**/*.bin
+mcp_doc_finetune/**/*.pt
+mcp_doc_finetune/**/*.pth
+mcp_doc_finetune/**/*.gguf
+mcp_doc_finetune/**/*.onnx
+mcp_doc_finetune/**/*.7z
+mcp_doc_finetune/**/*.zip
+mcp_doc_finetune/**/*.tar*
+mcp_doc_finetune/**/*.whl
+# 分词器词典：单份约 11MB 且各 checkpoint 重复，可从基座模型恢复
+mcp_doc_finetune/**/tokenizer.json
+mcp_doc_finetune/**/tokenizer.model
+# 训练中间态（optimizer 状态等）
+mcp_doc_finetune/**/checkpoint-*/optimizer.*
+
+# ---- 下载缓存（HF / pip / torch）----
+mcp_doc_finetune/cache/
+**/.cache/
+**/hf_cache/
+**/pip-cache/
+
+# ---- 运行产物（全部可由一键跑完.ps1 / detector 脚本重新生成）----
+output/
+
+# ---- 本地工具目录 ----
+.workbuddy/
+
+# ---- Python ----
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# ---- 环境变量 / 密钥 ----
+.env
+.env.*
+!.env.example
+
+# ---- 系统杂项 ----
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -1,0 +1,924 @@
+{
+  "total": 102,
+  "generated_at": "2026-09-27T21:31:03.994824",
+  "plugins": [
+    {
+      "index": 1,
+      "full_name": "n8n-io/n8n",
+      "stars": 206095,
+      "language": "TypeScript",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\n8n-io_n8n",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\n8n-io_n8n\\info.json",
+      "html_url": "https://github.com/n8n-io/n8n"
+    },
+    {
+      "index": 2,
+      "full_name": "langgenius/dify",
+      "stars": 157317,
+      "language": "TypeScript",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\langgenius_dify",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\langgenius_dify\\info.json",
+      "html_url": "https://github.com/langgenius/dify"
+    },
+    {
+      "index": 3,
+      "full_name": "google-gemini/gemini-cli",
+      "stars": 107164,
+      "language": "TypeScript",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\google-gemini_gemini-cli",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\google-gemini_gemini-cli\\info.json",
+      "html_url": "https://github.com/google-gemini/gemini-cli"
+    },
+    {
+      "index": 4,
+      "full_name": "punkpeye/awesome-mcp-servers",
+      "stars": 95573,
+      "language": "",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\punkpeye_awesome-mcp-servers",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\punkpeye_awesome-mcp-servers\\info.json",
+      "html_url": "https://github.com/punkpeye/awesome-mcp-servers"
+    },
+    {
+      "index": 5,
+      "full_name": "modelcontextprotocol/servers",
+      "stars": 90618,
+      "language": "TypeScript",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\modelcontextprotocol_servers",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\modelcontextprotocol_servers\\info.json",
+      "html_url": "https://github.com/modelcontextprotocol/servers"
+    },
+    {
+      "index": 6,
+      "full_name": "koala73/worldmonitor",
+      "stars": 87459,
+      "language": "TypeScript",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\koala73_worldmonitor",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\koala73_worldmonitor\\info.json",
+      "html_url": "https://github.com/koala73/worldmonitor"
+    },
+    {
+      "index": 7,
+      "full_name": "D4Vinci/Scrapling",
+      "stars": 83991,
+      "language": "Python",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\D4Vinci_Scrapling",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\D4Vinci_Scrapling\\info.json",
+      "html_url": "https://github.com/D4Vinci/Scrapling"
+    },
+    {
+      "index": 8,
+      "full_name": "ComposioHQ/awesome-claude-skills",
+      "stars": 75712,
+      "language": "Python",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\ComposioHQ_awesome-claude-skills",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\ComposioHQ_awesome-claude-skills\\info.json",
+      "html_url": "https://github.com/ComposioHQ/awesome-claude-skills"
+    },
+    {
+      "index": 9,
+      "full_name": "headroomlabs-ai/headroom",
+      "stars": 73924,
+      "language": "Python",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\headroomlabs-ai_headroom",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\headroomlabs-ai_headroom\\info.json",
+      "html_url": "https://github.com/headroomlabs-ai/headroom"
+    },
+    {
+      "index": 10,
+      "full_name": "ruvnet/ruflo",
+      "stars": 73364,
+      "language": "TypeScript",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\ruvnet_ruflo",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\ruvnet_ruflo\\info.json",
+      "html_url": "https://github.com/ruvnet/ruflo"
+    },
+    {
+      "index": 11,
+      "full_name": "sansan0/TrendRadar",
+      "stars": 62559,
+      "language": "Python",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\sansan0_TrendRadar",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\sansan0_TrendRadar\\info.json",
+      "html_url": "https://github.com/sansan0/TrendRadar"
+    },
+    {
+      "index": 12,
+      "full_name": "upstash/context7",
+      "stars": 62467,
+      "language": "TypeScript",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\upstash_context7",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\upstash_context7\\info.json",
+      "html_url": "https://github.com/upstash/context7"
+    },
+    {
+      "index": 13,
+      "full_name": "zylon-ai/private-gpt",
+      "stars": 57544,
+      "language": "Python",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\zylon-ai_private-gpt",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\zylon-ai_private-gpt\\info.json",
+      "html_url": "https://github.com/zylon-ai/private-gpt"
+    },
+    {
+      "index": 14,
+      "full_name": "ChromeDevTools/chrome-devtools-mcp",
+      "stars": 52654,
+      "language": "TypeScript",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\ChromeDevTools_chrome-devtools-mcp",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\ChromeDevTools_chrome-devtools-mcp\\info.json",
+      "html_url": "https://github.com/ChromeDevTools/chrome-devtools-mcp"
+    },
+    {
+      "index": 15,
+      "full_name": "HKUDS/nanobot",
+      "stars": 48609,
+      "language": "Python",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\HKUDS_nanobot",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\HKUDS_nanobot\\info.json",
+      "html_url": "https://github.com/HKUDS/nanobot"
+    },
+    {
+      "index": 16,
+      "full_name": "zhayujie/CowAgent",
+      "stars": 47135,
+      "language": "Python",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\zhayujie_CowAgent",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\zhayujie_CowAgent\\info.json",
+      "html_url": "https://github.com/zhayujie/CowAgent"
+    },
+    {
+      "index": 17,
+      "full_name": "sickn33/agentic-awesome-skills",
+      "stars": 46979,
+      "language": "Python",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\sickn33_agentic-awesome-skills",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\sickn33_agentic-awesome-skills\\info.json",
+      "html_url": "https://github.com/sickn33/agentic-awesome-skills"
+    },
+    {
+      "index": 18,
+      "full_name": "DeusData/codebase-memory-mcp",
+      "stars": 45018,
+      "language": "C",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\DeusData_codebase-memory-mcp",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\DeusData_codebase-memory-mcp\\info.json",
+      "html_url": "https://github.com/DeusData/codebase-memory-mcp"
+    },
+    {
+      "index": 19,
+      "full_name": "reactive-resume/reactive-resume",
+      "stars": 43470,
+      "language": "TypeScript",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\reactive-resume_reactive-resume",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\reactive-resume_reactive-resume\\info.json",
+      "html_url": "https://github.com/reactive-resume/reactive-resume"
+    },
+    {
+      "index": 20,
+      "full_name": "AstrBotDevs/AstrBot",
+      "stars": 41088,
+      "language": "Python",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\AstrBotDevs_AstrBot",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\AstrBotDevs_AstrBot\\info.json",
+      "html_url": "https://github.com/AstrBotDevs/AstrBot"
+    },
+    {
+      "index": 21,
+      "full_name": "ToolJet/ToolJet",
+      "stars": 41002,
+      "language": "JavaScript",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\ToolJet_ToolJet",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\ToolJet_ToolJet\\info.json",
+      "html_url": "https://github.com/ToolJet/ToolJet"
+    },
+    {
+      "index": 22,
+      "full_name": "wshobson/agents",
+      "stars": 40020,
+      "language": "Python",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\wshobson_agents",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\wshobson_agents\\info.json",
+      "html_url": "https://github.com/wshobson/agents"
+    },
+    {
+      "index": 23,
+      "full_name": "PostHog/posthog",
+      "stars": 39966,
+      "language": "Python",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\PostHog_posthog",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\PostHog_posthog\\info.json",
+      "html_url": "https://github.com/PostHog/posthog"
+    },
+    {
+      "index": 24,
+      "full_name": "bytedance/UI-TARS-desktop",
+      "stars": 39129,
+      "language": "TypeScript",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\bytedance_UI-TARS-desktop",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\bytedance_UI-TARS-desktop\\info.json",
+      "html_url": "https://github.com/bytedance/UI-TARS-desktop"
+    },
+    {
+      "index": 25,
+      "full_name": "microsoft/playwright-mcp",
+      "stars": 37612,
+      "language": "TypeScript",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\microsoft_playwright-mcp",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\microsoft_playwright-mcp\\info.json",
+      "html_url": "https://github.com/microsoft/playwright-mcp"
+    },
+    {
+      "index": 26,
+      "full_name": "anthropics/claude-plugins-official",
+      "stars": 37076,
+      "language": "Python",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\anthropics_claude-plugins-official",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\anthropics_claude-plugins-official\\info.json",
+      "html_url": "https://github.com/anthropics/claude-plugins-official"
+    },
+    {
+      "index": 27,
+      "full_name": "github/github-mcp-server",
+      "stars": 33230,
+      "language": "Go",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\github_github-mcp-server",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\github_github-mcp-server\\info.json",
+      "html_url": "https://github.com/github/github-mcp-server"
+    },
+    {
+      "index": 28,
+      "full_name": "SigNoz/signoz",
+      "stars": 32215,
+      "language": "TypeScript",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\SigNoz_signoz",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\SigNoz_signoz\\info.json",
+      "html_url": "https://github.com/SigNoz/signoz"
+    },
+    {
+      "index": 29,
+      "full_name": "tirth8205/code-review-graph",
+      "stars": 31808,
+      "language": "Python",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\tirth8205_code-review-graph",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\tirth8205_code-review-graph\\info.json",
+      "html_url": "https://github.com/tirth8205/code-review-graph"
+    },
+    {
+      "index": 30,
+      "full_name": "feder-cr/invisible_playwright_mcp",
+      "stars": 31676,
+      "language": "Python",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\feder-cr_invisible_playwright_mcp",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\feder-cr_invisible_playwright_mcp\\info.json",
+      "html_url": "https://github.com/feder-cr/invisible_playwright_mcp"
+    },
+    {
+      "index": 31,
+      "full_name": "ComposioHQ/composio",
+      "stars": 30334,
+      "language": "TypeScript",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\ComposioHQ_composio",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\ComposioHQ_composio\\info.json",
+      "html_url": "https://github.com/ComposioHQ/composio"
+    },
+    {
+      "index": 32,
+      "full_name": "oraios/serena",
+      "stars": 29836,
+      "language": "Python",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\oraios_serena",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\oraios_serena\\info.json",
+      "html_url": "https://github.com/oraios/serena"
+    },
+    {
+      "index": 33,
+      "full_name": "assafelovic/gpt-researcher",
+      "stars": 29642,
+      "language": "Python",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\assafelovic_gpt-researcher",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\assafelovic_gpt-researcher\\info.json",
+      "html_url": "https://github.com/assafelovic/gpt-researcher"
+    },
+    {
+      "index": 34,
+      "full_name": "ahujasid/mcp-for-blender",
+      "stars": 29465,
+      "language": "Python",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\ahujasid_mcp-for-blender",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\ahujasid_mcp-for-blender\\info.json",
+      "html_url": "https://github.com/ahujasid/mcp-for-blender"
+    },
+    {
+      "index": 35,
+      "full_name": "yamadashy/repomix",
+      "stars": 28505,
+      "language": "TypeScript",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\yamadashy_repomix",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\yamadashy_repomix\\info.json",
+      "html_url": "https://github.com/yamadashy/repomix"
+    },
+    {
+      "index": 36,
+      "full_name": "PrefectHQ/fastmcp",
+      "stars": 27908,
+      "language": "Python",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\PrefectHQ_fastmcp",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\PrefectHQ_fastmcp\\info.json",
+      "html_url": "https://github.com/PrefectHQ/fastmcp"
+    },
+    {
+      "index": 37,
+      "full_name": "activepieces/activepieces",
+      "stars": 24748,
+      "language": "TypeScript",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\activepieces_activepieces",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\activepieces_activepieces\\info.json",
+      "html_url": "https://github.com/activepieces/activepieces"
+    },
+    {
+      "index": 38,
+      "full_name": "modelcontextprotocol/python-sdk",
+      "stars": 24409,
+      "language": "Python",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\modelcontextprotocol_python-sdk",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\modelcontextprotocol_python-sdk\\info.json",
+      "html_url": "https://github.com/modelcontextprotocol/python-sdk"
+    },
+    {
+      "index": 39,
+      "full_name": "pascalorg/editor",
+      "stars": 24333,
+      "language": "TypeScript",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\pascalorg_editor",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\pascalorg_editor\\info.json",
+      "html_url": "https://github.com/pascalorg/editor"
+    },
+    {
+      "index": 40,
+      "full_name": "mksglu/context-mode",
+      "stars": 24116,
+      "language": "TypeScript",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\mksglu_context-mode",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\mksglu_context-mode\\info.json",
+      "html_url": "https://github.com/mksglu/context-mode"
+    },
+    {
+      "index": 41,
+      "full_name": "t8y2/dbx",
+      "stars": 20894,
+      "language": "Rust",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\t8y2_dbx",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\t8y2_dbx\\info.json",
+      "html_url": "https://github.com/t8y2/dbx"
+    },
+    {
+      "index": 42,
+      "full_name": "Evil0ctal/Douyin_TikTok_Download_API",
+      "stars": 20359,
+      "language": "Python",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\Evil0ctal_Douyin_TikTok_Download_API",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\Evil0ctal_Douyin_TikTok_Download_API\\info.json",
+      "html_url": "https://github.com/Evil0ctal/Douyin_TikTok_Download_API"
+    },
+    {
+      "index": 43,
+      "full_name": "microsoft/mcp-for-beginners",
+      "stars": 17323,
+      "language": "Jupyter Notebook",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\microsoft_mcp-for-beginners",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\microsoft_mcp-for-beginners\\info.json",
+      "html_url": "https://github.com/microsoft/mcp-for-beginners"
+    },
+    {
+      "index": 44,
+      "full_name": "googleapis/mcp-toolbox",
+      "stars": 16494,
+      "language": "Go",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\googleapis_mcp-toolbox",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\googleapis_mcp-toolbox\\info.json",
+      "html_url": "https://github.com/googleapis/mcp-toolbox"
+    },
+    {
+      "index": 45,
+      "full_name": "GLips/Figma-Context-MCP",
+      "stars": 15916,
+      "language": "TypeScript",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\GLips_Figma-Context-MCP",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\GLips_Figma-Context-MCP\\info.json",
+      "html_url": "https://github.com/GLips/Figma-Context-MCP"
+    },
+    {
+      "index": 46,
+      "full_name": "budtmo/docker-android",
+      "stars": 15882,
+      "language": "Python",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\budtmo_docker-android",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\budtmo_docker-android\\info.json",
+      "html_url": "https://github.com/budtmo/docker-android"
+    },
+    {
+      "index": 47,
+      "full_name": "rocketride-org/rocketride-server",
+      "stars": 15015,
+      "language": "Python",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\rocketride-org_rocketride-server",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\rocketride-org_rocketride-server\\info.json",
+      "html_url": "https://github.com/rocketride-org/rocketride-server"
+    },
+    {
+      "index": 48,
+      "full_name": "CoplayDev/unity-mcp",
+      "stars": 14523,
+      "language": "C#",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\CoplayDev_unity-mcp",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\CoplayDev_unity-mcp\\info.json",
+      "html_url": "https://github.com/CoplayDev/unity-mcp"
+    },
+    {
+      "index": 49,
+      "full_name": "casdoor/casdoor",
+      "stars": 14476,
+      "language": "Go",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\casdoor_casdoor",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\casdoor_casdoor\\info.json",
+      "html_url": "https://github.com/casdoor/casdoor"
+    },
+    {
+      "index": 50,
+      "full_name": "modelcontextprotocol/typescript-sdk",
+      "stars": 13469,
+      "language": "TypeScript",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\modelcontextprotocol_typescript-sdk",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\modelcontextprotocol_typescript-sdk\\info.json",
+      "html_url": "https://github.com/modelcontextprotocol/typescript-sdk"
+    },
+    {
+      "index": 51,
+      "full_name": "EverMind-AI/EverOS",
+      "stars": 13224,
+      "language": "Python",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\EverMind-AI_EverOS",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\EverMind-AI_EverOS\\info.json",
+      "html_url": "https://github.com/EverMind-AI/EverOS"
+    },
+    {
+      "index": 52,
+      "full_name": "langchain4j/langchain4j",
+      "stars": 13162,
+      "language": "Java",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\langchain4j_langchain4j",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\langchain4j_langchain4j\\info.json",
+      "html_url": "https://github.com/langchain4j/langchain4j"
+    },
+    {
+      "index": 53,
+      "full_name": "seleniumbase/SeleniumBase",
+      "stars": 13037,
+      "language": "Python",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\seleniumbase_SeleniumBase",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\seleniumbase_SeleniumBase\\info.json",
+      "html_url": "https://github.com/seleniumbase/SeleniumBase"
+    },
+    {
+      "index": 54,
+      "full_name": "hangwin/mcp-chrome",
+      "stars": 12455,
+      "language": "TypeScript",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\hangwin_mcp-chrome",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\hangwin_mcp-chrome\\info.json",
+      "html_url": "https://github.com/hangwin/mcp-chrome"
+    },
+    {
+      "index": 55,
+      "full_name": "mrexodia/ida-pro-mcp",
+      "stars": 12361,
+      "language": "Python",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\mrexodia_ida-pro-mcp",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\mrexodia_ida-pro-mcp\\info.json",
+      "html_url": "https://github.com/mrexodia/ida-pro-mcp"
+    },
+    {
+      "index": 56,
+      "full_name": "0x4m4/hexstrike-ai",
+      "stars": 12146,
+      "language": "Python",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\0x4m4_hexstrike-ai",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\0x4m4_hexstrike-ai\\info.json",
+      "html_url": "https://github.com/0x4m4/hexstrike-ai"
+    },
+    {
+      "index": 57,
+      "full_name": "creativetimofficial/ui",
+      "stars": 12068,
+      "language": "TypeScript",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\creativetimofficial_ui",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\creativetimofficial_ui\\info.json",
+      "html_url": "https://github.com/creativetimofficial/ui"
+    },
+    {
+      "index": 58,
+      "full_name": "tadata-org/fastapi_mcp",
+      "stars": 12010,
+      "language": "Python",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\tadata-org_fastapi_mcp",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\tadata-org_fastapi_mcp\\info.json",
+      "html_url": "https://github.com/tadata-org/fastapi_mcp"
+    },
+    {
+      "index": 59,
+      "full_name": "TykTechnologies/tyk",
+      "stars": 10837,
+      "language": "Go",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\TykTechnologies_tyk",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\TykTechnologies_tyk\\info.json",
+      "html_url": "https://github.com/TykTechnologies/tyk"
+    },
+    {
+      "index": 60,
+      "full_name": "mcp-use/mcp-use",
+      "stars": 10681,
+      "language": "TypeScript",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\mcp-use_mcp-use",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\mcp-use_mcp-use\\info.json",
+      "html_url": "https://github.com/mcp-use/mcp-use"
+    },
+    {
+      "index": 61,
+      "full_name": "awslabs/mcp",
+      "stars": 9732,
+      "language": "Python",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\awslabs_mcp",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\awslabs_mcp\\info.json",
+      "html_url": "https://github.com/awslabs/mcp"
+    },
+    {
+      "index": 62,
+      "full_name": "modelcontextprotocol/modelcontextprotocol",
+      "stars": 9317,
+      "language": "TypeScript",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\modelcontextprotocol_modelcontextprotocol",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\modelcontextprotocol_modelcontextprotocol\\info.json",
+      "html_url": "https://github.com/modelcontextprotocol/modelcontextprotocol"
+    },
+    {
+      "index": 63,
+      "full_name": "mark3labs/mcp-go",
+      "stars": 9147,
+      "language": "Go",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\mark3labs_mcp-go",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\mark3labs_mcp-go\\info.json",
+      "html_url": "https://github.com/mark3labs/mcp-go"
+    },
+    {
+      "index": 64,
+      "full_name": "lastmile-ai/mcp-agent",
+      "stars": 8559,
+      "language": "Python",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\lastmile-ai_mcp-agent",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\lastmile-ai_mcp-agent\\info.json",
+      "html_url": "https://github.com/lastmile-ai/mcp-agent"
+    },
+    {
+      "index": 65,
+      "full_name": "mobile-next/mobile-mcp",
+      "stars": 7656,
+      "language": "TypeScript",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\mobile-next_mobile-mcp",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\mobile-next_mobile-mcp\\info.json",
+      "html_url": "https://github.com/mobile-next/mobile-mcp"
+    },
+    {
+      "index": 66,
+      "full_name": "modelcontextprotocol/registry",
+      "stars": 7286,
+      "language": "Go",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\modelcontextprotocol_registry",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\modelcontextprotocol_registry\\info.json",
+      "html_url": "https://github.com/modelcontextprotocol/registry"
+    },
+    {
+      "index": 67,
+      "full_name": "getsentry/MobileBuildMCP",
+      "stars": 6433,
+      "language": "TypeScript",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\getsentry_MobileBuildMCP",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\getsentry_MobileBuildMCP\\info.json",
+      "html_url": "https://github.com/getsentry/MobileBuildMCP"
+    },
+    {
+      "index": 68,
+      "full_name": "jacob-bd/gemini-notebook-mcp-cli",
+      "stars": 6168,
+      "language": "Python",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\jacob-bd_gemini-notebook-mcp-cli",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\jacob-bd_gemini-notebook-mcp-cli\\info.json",
+      "html_url": "https://github.com/jacob-bd/gemini-notebook-mcp-cli"
+    },
+    {
+      "index": 69,
+      "full_name": "vastsa/PI-Desktop",
+      "stars": 5876,
+      "language": "TypeScript",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\vastsa_PI-Desktop",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\vastsa_PI-Desktop\\info.json",
+      "html_url": "https://github.com/vastsa/PI-Desktop"
+    },
+    {
+      "index": 70,
+      "full_name": "appcypher/awesome-mcp-servers",
+      "stars": 5777,
+      "language": "",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\appcypher_awesome-mcp-servers",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\appcypher_awesome-mcp-servers\\info.json",
+      "html_url": "https://github.com/appcypher/awesome-mcp-servers"
+    },
+    {
+      "index": 71,
+      "full_name": "0xNyk/awesome-hermes-agent",
+      "stars": 5747,
+      "language": "",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\0xNyk_awesome-hermes-agent",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\0xNyk_awesome-hermes-agent\\info.json",
+      "html_url": "https://github.com/0xNyk/awesome-hermes-agent"
+    },
+    {
+      "index": 72,
+      "full_name": "executeautomation/mcp-playwright",
+      "stars": 5657,
+      "language": "TypeScript",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\executeautomation_mcp-playwright",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\executeautomation_mcp-playwright\\info.json",
+      "html_url": "https://github.com/executeautomation/mcp-playwright"
+    },
+    {
+      "index": 73,
+      "full_name": "nanbingxyz/5ire",
+      "stars": 5361,
+      "language": "TypeScript",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\nanbingxyz_5ire",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\nanbingxyz_5ire\\info.json",
+      "html_url": "https://github.com/nanbingxyz/5ire"
+    },
+    {
+      "index": 74,
+      "full_name": "54yyyu/zotero-mcp",
+      "stars": 5176,
+      "language": "Python",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\54yyyu_zotero-mcp",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\54yyyu_zotero-mcp\\info.json",
+      "html_url": "https://github.com/54yyyu/zotero-mcp"
+    },
+    {
+      "index": 75,
+      "full_name": "modelcontextprotocol/go-sdk",
+      "stars": 5157,
+      "language": "Go",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\modelcontextprotocol_go-sdk",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\modelcontextprotocol_go-sdk\\info.json",
+      "html_url": "https://github.com/modelcontextprotocol/go-sdk"
+    },
+    {
+      "index": 76,
+      "full_name": "TabularisDB/tabularis",
+      "stars": 5071,
+      "language": "TypeScript",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\TabularisDB_tabularis",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\TabularisDB_tabularis\\info.json",
+      "html_url": "https://github.com/TabularisDB/tabularis"
+    },
+    {
+      "index": 77,
+      "full_name": "modelcontextprotocol/csharp-sdk",
+      "stars": 4548,
+      "language": "C#",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\modelcontextprotocol_csharp-sdk",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\modelcontextprotocol_csharp-sdk\\info.json",
+      "html_url": "https://github.com/modelcontextprotocol/csharp-sdk"
+    },
+    {
+      "index": 78,
+      "full_name": "IBM/mcp-context-forge",
+      "stars": 4534,
+      "language": "Python",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\IBM_mcp-context-forge",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\IBM_mcp-context-forge\\info.json",
+      "html_url": "https://github.com/IBM/mcp-context-forge"
+    },
+    {
+      "index": 79,
+      "full_name": "MarkusPfundstein/mcp-obsidian",
+      "stars": 4446,
+      "language": "Python",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\MarkusPfundstein_mcp-obsidian",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\MarkusPfundstein_mcp-obsidian\\info.json",
+      "html_url": "https://github.com/MarkusPfundstein/mcp-obsidian"
+    },
+    {
+      "index": 80,
+      "full_name": "bethington/ghidra-mcp",
+      "stars": 4013,
+      "language": "Java",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\bethington_ghidra-mcp",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\bethington_ghidra-mcp\\info.json",
+      "html_url": "https://github.com/bethington/ghidra-mcp"
+    },
+    {
+      "index": 81,
+      "full_name": "nowork-studio/notfair-plugin",
+      "stars": 3868,
+      "language": "TypeScript",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\nowork-studio_notfair-plugin",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\nowork-studio_notfair-plugin\\info.json",
+      "html_url": "https://github.com/nowork-studio/notfair-plugin"
+    },
+    {
+      "index": 82,
+      "full_name": "liaokongVFX/MCP-Chinese-Getting-Started-Guide",
+      "stars": 3571,
+      "language": "",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\liaokongVFX_MCP-Chinese-Getting-Started-Guide",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\liaokongVFX_MCP-Chinese-Getting-Started-Guide\\info.json",
+      "html_url": "https://github.com/liaokongVFX/MCP-Chinese-Getting-Started-Guide"
+    },
+    {
+      "index": 83,
+      "full_name": "davepoon/buildwithclaude",
+      "stars": 3551,
+      "language": "Python",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\davepoon_buildwithclaude",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\davepoon_buildwithclaude\\info.json",
+      "html_url": "https://github.com/davepoon/buildwithclaude"
+    },
+    {
+      "index": 84,
+      "full_name": "metorial/metorial",
+      "stars": 3360,
+      "language": "TypeScript",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\metorial_metorial",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\metorial_metorial\\info.json",
+      "html_url": "https://github.com/metorial/metorial"
+    },
+    {
+      "index": 85,
+      "full_name": "giancarloerra/SocratiCode",
+      "stars": 3320,
+      "language": "TypeScript",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\giancarloerra_SocratiCode",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\giancarloerra_SocratiCode\\info.json",
+      "html_url": "https://github.com/giancarloerra/SocratiCode"
+    },
+    {
+      "index": 86,
+      "full_name": "supermemoryai/apple-mcp",
+      "stars": 3125,
+      "language": "TypeScript",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\supermemoryai_apple-mcp",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\supermemoryai_apple-mcp\\info.json",
+      "html_url": "https://github.com/supermemoryai/apple-mcp"
+    },
+    {
+      "index": 87,
+      "full_name": "snyk/agent-scan",
+      "stars": 3090,
+      "language": "Python",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\snyk_agent-scan",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\snyk_agent-scan\\info.json",
+      "html_url": "https://github.com/snyk/agent-scan"
+    },
+    {
+      "index": 88,
+      "full_name": "cheshire-cat-ai/core",
+      "stars": 3089,
+      "language": "Python",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\cheshire-cat-ai_core",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\cheshire-cat-ai_core\\info.json",
+      "html_url": "https://github.com/cheshire-cat-ai/core"
+    },
+    {
+      "index": 89,
+      "full_name": "Jpisnice/shadcn-ui-mcp-server",
+      "stars": 3003,
+      "language": "TypeScript",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\Jpisnice_shadcn-ui-mcp-server",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\Jpisnice_shadcn-ui-mcp-server\\info.json",
+      "html_url": "https://github.com/Jpisnice/shadcn-ui-mcp-server"
+    },
+    {
+      "index": 90,
+      "full_name": "modelcontextprotocol/ext-apps",
+      "stars": 2873,
+      "language": "TypeScript",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\modelcontextprotocol_ext-apps",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\modelcontextprotocol_ext-apps\\info.json",
+      "html_url": "https://github.com/modelcontextprotocol/ext-apps"
+    },
+    {
+      "index": 91,
+      "full_name": "zinja-coder/jadx-ai-mcp",
+      "stars": 2833,
+      "language": "Java",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\zinja-coder_jadx-ai-mcp",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\zinja-coder_jadx-ai-mcp\\info.json",
+      "html_url": "https://github.com/zinja-coder/jadx-ai-mcp"
+    },
+    {
+      "index": 92,
+      "full_name": "opensolon/solon",
+      "stars": 2793,
+      "language": "Java",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\opensolon_solon",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\opensolon_solon\\info.json",
+      "html_url": "https://github.com/opensolon/solon"
+    },
+    {
+      "index": 93,
+      "full_name": "aws/agent-toolkit-for-aws",
+      "stars": 2730,
+      "language": "Python",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\aws_agent-toolkit-for-aws",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\aws_agent-toolkit-for-aws\\info.json",
+      "html_url": "https://github.com/aws/agent-toolkit-for-aws"
+    },
+    {
+      "index": 94,
+      "full_name": "brightdata/brightdata-mcp",
+      "stars": 2659,
+      "language": "JavaScript",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\brightdata_brightdata-mcp",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\brightdata_brightdata-mcp\\info.json",
+      "html_url": "https://github.com/brightdata/brightdata-mcp"
+    },
+    {
+      "index": 95,
+      "full_name": "papersgpt/papersgpt-for-zotero",
+      "stars": 2657,
+      "language": "JavaScript",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\papersgpt_papersgpt-for-zotero",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\papersgpt_papersgpt-for-zotero\\info.json",
+      "html_url": "https://github.com/papersgpt/papersgpt-for-zotero"
+    },
+    {
+      "index": 96,
+      "full_name": "rohitg00/awesome-claude-code-toolkit",
+      "stars": 2649,
+      "language": "JavaScript",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\rohitg00_awesome-claude-code-toolkit",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\rohitg00_awesome-claude-code-toolkit\\info.json",
+      "html_url": "https://github.com/rohitg00/awesome-claude-code-toolkit"
+    },
+    {
+      "index": 97,
+      "full_name": "perplexityai/modelcontextprotocol",
+      "stars": 2544,
+      "language": "TypeScript",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\perplexityai_modelcontextprotocol",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\perplexityai_modelcontextprotocol\\info.json",
+      "html_url": "https://github.com/perplexityai/modelcontextprotocol"
+    },
+    {
+      "index": 98,
+      "full_name": "mattzcarey/shippie",
+      "stars": 2505,
+      "language": "TypeScript",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\mattzcarey_shippie",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\mattzcarey_shippie\\info.json",
+      "html_url": "https://github.com/mattzcarey/shippie"
+    },
+    {
+      "index": 99,
+      "full_name": "nitrocloudofficial/nitrostack",
+      "stars": 2481,
+      "language": "TypeScript",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\nitrocloudofficial_nitrostack",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\nitrocloudofficial_nitrostack\\info.json",
+      "html_url": "https://github.com/nitrocloudofficial/nitrostack"
+    },
+    {
+      "index": 100,
+      "full_name": "MCPJam/inspector",
+      "stars": 2221,
+      "language": "TypeScript",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\MCPJam_inspector",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\MCPJam_inspector\\info.json",
+      "html_url": "https://github.com/MCPJam/inspector"
+    },
+    {
+      "index": 101,
+      "full_name": "containers/kubernetes-mcp-server",
+      "stars": 2125,
+      "language": "Go",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\containers_kubernetes-mcp-server",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\containers_kubernetes-mcp-server\\info.json",
+      "html_url": "https://github.com/containers/kubernetes-mcp-server"
+    },
+    {
+      "index": 102,
+      "full_name": "duty1g/x64dbg-mcp-server",
+      "stars": 2107,
+      "language": "Zig",
+      "storage_path": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\duty1g_x64dbg-mcp-server",
+      "info_file": "C:\\Users\\比企谷八幡\\Desktop\\mcp投毒安全检测\\mcp插件\\duty1g_x64dbg-mcp-server\\info.json",
+      "html_url": "https://github.com/duty1g/x64dbg-mcp-server"
+    }
+  ]
+}

