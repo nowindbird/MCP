@@ -1,0 +1,10 @@
+# 仅「微调专用文档模型」时需要（detector/analyzer/finetune/）
+# 安装：pip install -r requirements-finetune.txt
+-r requirements.txt
+
+torch>=2.0
+transformers>=4.40
+peft>=0.10
+datasets>=2.18
+accelerate>=0.27
+bitsandbytes>=0.43   # QLoRA 4bit 量化用；Windows 若安装失败可去掉，改用 --quantize none

@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 语法检查
+        run: python -m compileall detector
+
+      - name: 配置自检（验证路径解析）
+        run: python detector/config.py
+
+      - name: 禁止写死用户名路径
+        # 曾经因写死 C:\Users\<用户名>\... 导致换机即挂，此处守住不回退
+        run: |
+          hits=$(grep -rnE "[A-Za-z]:[\\\\/]Users[\\\\/]" detector --include="*.py" || true)
+          if [ -n "$hits" ]; then
+            echo "发现写死的用户名路径（请改用 config.py + 环境变量）："
+            echo "$hits"
+            exit 1
+          fi
+          echo "OK"
+
+      - name: 禁止混入大文件
+        # 只检查「已入库」文件，避免本地被 .gitignore 排除的权重造成误报。
+        # 阈值 50MB：GitHub 单文件上限 100MB，留足余量。
+        run: |
+          hits=$(git ls-files | while read -r f; do
+            [ -f "$f" ] || continue
+            s=$(wc -c < "$f" | tr -d ' ')
+            [ "$s" -gt 52428800 ] && echo "$f ($(( s / 1048576 )) MB)"
+          done)
+          if [ -n "$hits" ]; then
+            echo "发现超过 50MB 的入库文件（模型权重/产物不应入库）："
+            echo "$hits"
+            exit 1
+          fi
+          echo "OK"
