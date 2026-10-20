@@ -96,6 +96,19 @@ GitHub 单文件上限 100MB。以下**一律不入库**（已在 `.gitignore`�
 
 ---
 
+## 常见问题
+
+### 推送报 `does not support the Git LFS locking API`
+
+本仓库**不使用** Git LFS（大文件一律不入库）。若你本机装过 git-lfs，
+推送时可能因 LFS 锁校验失败而报上面的错，关掉校验即可：
+
+```bash
+git config lfs.https://github.com/<你的用户名>/MCP.git/info/lfs.locksverify false
+```
+
+---
+
 ## PR 检查清单
 
 提交前请确认：
