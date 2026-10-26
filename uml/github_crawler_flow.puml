@@ -1,0 +1,59 @@
+@startuml
+' MPV-STYLE-BEGIN
+skinparam defaultFontName "Microsoft YaHei"
+skinparam monospacedFontName "Consolas"
+skinparam backgroundColor #FBFBFD
+skinparam shadowing true
+skinparam roundCorner 12
+skinparam linetype ortho
+skinparam dpi 180
+skinparam ArrowColor #546E7A
+skinparam ArrowThickness 1.2
+skinparam ArrowFontSize 11
+skinparam ActivityBackgroundColor #DCEEFB
+skinparam ActivityBorderColor #2E6DA4
+skinparam ActivityBorderThickness 1.2
+skinparam ActivityFontColor #123A5A
+skinparam ActivityFontSize 13
+skinparam ActivityDiamondBackgroundColor #FFE8CC
+skinparam ActivityDiamondBorderColor #D9761B
+skinparam ActivityDiamondBorderThickness 1.2
+skinparam ActivityDiamondFontColor #7A3E00
+skinparam ActivityDiamondFontSize 12
+skinparam ActivityStartColor #2E7D32
+skinparam ActivityEndColor #C62828
+skinparam ActivityBarColor #546E7A
+skinparam ActivityArrowColor #546E7A
+skinparam PartitionBorderColor #9FB3C8
+skinparam PartitionBorderThickness 1.2
+skinparam PartitionBackgroundColor #F4F7FB
+skinparam PartitionFontColor #293845
+skinparam PartitionFontSize 13
+skinparam PartitionFontStyle bold
+skinparam NoteBackgroundColor #FFF8E1
+skinparam NoteBorderColor #D9A441
+skinparam NoteFontColor #4A3B12
+skinparam TitleFontSize 18
+skinparam TitleFontColor #1B2A3A
+skinparam TitleFontStyle bold
+skinparam TitleBorderThickness 0
+skinparam HeaderFontSize 11
+skinparam HeaderFontColor #7A8B99
+skinparam FooterFontSize 10
+skinparam FooterFontColor #9AA7B3
+' MPV-STYLE-END
+title crawler/github_crawler.py 仓库爬取流程
+start
+:build_query 组装关键词与过滤条件;
+:search_repos 分页调用 GitHub 搜索 API;
+:_check_rate_limit 速率限制检查;
+:apply_client_filters 客户端二次过滤;
+while (还有仓库?) is (是)
+  :fetch_repo_detail 取仓库详情;
+  :fetch_readme 取 README;
+  :fetch_recent_commits 取最近提交;
+  :normalize_repo 归一化为统一字段;
+endwhile (否)
+:save_json / save_csv / save_summary 落盘;
+stop
+@enduml

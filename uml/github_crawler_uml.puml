@@ -1,0 +1,138 @@
+@startuml
+' MPV-STYLE-BEGIN
+skinparam defaultFontName "Microsoft YaHei"
+skinparam monospacedFontName "Consolas"
+skinparam backgroundColor #FBFBFD
+skinparam shadowing true
+skinparam roundCorner 10
+skinparam linetype ortho
+skinparam dpi 180
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam ArrowColor #5B6B7C
+skinparam ArrowThickness 1.1
+skinparam ArrowFontSize 11
+skinparam ClassBackgroundColor #FFFFFF
+skinparam ClassBorderColor #3D5A80
+skinparam ClassBorderThickness 1.2
+skinparam ClassFontColor #1B2A3A
+skinparam ClassFontSize 14
+skinparam ClassFontStyle bold
+skinparam ClassAttributeFontColor #33475B
+skinparam ClassAttributeFontSize 12
+skinparam ClassStereotypeFontSize 12
+skinparam PackageBackgroundColor #F4F7FB
+skinparam PackageBorderColor #9FB3C8
+skinparam PackageBorderThickness 1.2
+skinparam PackageFontColor #293845
+skinparam PackageFontSize 13
+skinparam PackageFontStyle bold
+skinparam NoteBackgroundColor #FFF8E1
+skinparam NoteBorderColor #D9A441
+skinparam NoteFontColor #4A3B12
+skinparam TitleFontSize 18
+skinparam TitleFontColor #1B2A3A
+skinparam TitleFontStyle bold
+skinparam TitleBorderThickness 0
+skinparam HeaderFontSize 11
+skinparam HeaderFontColor #7A8B99
+skinparam FooterFontSize 10
+skinparam FooterFontColor #9AA7B3
+hide empty members
+hide circle
+' MPV-STYLE-END
+skinparam defaultFontName "Microsoft YaHei"
+skinparam monospacedFontName "Consolas"
+skinparam backgroundColor #FBFBFD
+skinparam shadowing true
+skinparam roundCorner 10
+skinparam linetype ortho
+skinparam dpi 180
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam ArrowColor #5B6B7C
+skinparam ArrowThickness 1.1
+skinparam ArrowFontSize 11
+skinparam ClassBackgroundColor #FFFFFF
+skinparam ClassBorderColor #3D5A80
+skinparam ClassBorderThickness 1.2
+skinparam ClassFontColor #1B2A3A
+skinparam ClassFontSize 14
+skinparam ClassFontStyle bold
+skinparam ClassAttributeFontColor #33475B
+skinparam ClassAttributeFontSize 12
+skinparam ClassStereotypeFontSize 12
+skinparam PackageBackgroundColor #F4F7FB
+skinparam PackageBorderColor #9FB3C8
+skinparam PackageBorderThickness 1.2
+skinparam PackageFontColor #293845
+skinparam PackageFontSize 13
+skinparam PackageFontStyle bold
+skinparam NoteBackgroundColor #FFF8E1
+skinparam NoteBorderColor #D9A441
+skinparam NoteFontColor #4A3B12
+skinparam TitleFontSize 18
+skinparam TitleFontColor #1B2A3A
+skinparam TitleFontStyle bold
+skinparam TitleBorderThickness 0
+skinparam HeaderFontSize 11
+skinparam HeaderFontColor #7A8B99
+skinparam FooterFontSize 10
+skinparam FooterFontColor #9AA7B3
+hide empty members
+hide circle
+title github_crawler.py  类图
+header
+  MPV-Detector · detector.crawler
+endheader
+footer
+  由 uml_gen.py 依据源码 AST 自动生成
+endfooter
+
+package "detector.crawler" {
+  class GitHubMCPCrawler #back:FFFFFF;line:3D5A80 {
+    .. 字段 ..
+    - token
+    - fetch_readme
+    - session
+    - rate_limit_remaining
+    - rate_limit_reset
+    .. 构造 ..
+    +__init__(token: Optional[str], fetch_readme: bool)
+    .. 方法 ..
+    {staticmethod} +build_query(keyword: str, filters: Optional[Dict]) -> str  // 将关键词和筛选条件拼接为 GitHub Search API 查询语…
+    +search_repos(keyword: str, max_results: int, filters: Optional[Dict]) -> List[Dict]  // 按关键词和筛选条件搜索 GitHub 仓库（自动分页）。
+    {staticmethod} +apply_client_filters(repos: List[Dict], filters: Optional[Dict]) -> List[Dict]  // 在客户端对已抓取的仓库做二次筛选（服务端 qualifier 之外的…
+    +fetch_repo_detail(owner: str, repo: str) -> Optional[Dict]  // 获取单个仓库的详细信息
+    +fetch_readme(owner: str, repo: str) -> Optional[str]  // 获取仓库 README 内容（纯文本）；没有 README 返回 N…
+    +fetch_recent_commits(owner: str, repo: str, count: int) -> List[Dict]  // 获取最近的提交记录（精简字段：sha 前 8 位/首行 messag…
+    {staticmethod} +normalize_repo(raw: Dict, readme: Optional[str], commits: Optional[List[Dict]]) -> Dict  // 将 GitHub API 返回的原始仓库数据清洗为统一格式字典。
+    +crawl(keywords: List[str], max_results: int, fetch_commits: bool, filters: Optional[Dict]) -> List[Dict]  // 执行完整抓取流程：搜索→去重→抓详情/README→二次筛选→排序。
+    .. 内部方法 ..
+    -_request(url: str, params: Optional[Dict]) -> Optional[Dict]  // 带重试和速率限制处理的 GET 请求（返回 JSON 或 None）…
+    -_check_rate_limit() -> None  // 检查速率限制，剩余次数少时主动等待
+  }
+  note bottom of GitHubMCPCrawler : GitHub MCP 仓库抓取器
+
+  class "github_crawler.py\n<<模块级接口>>" as MOD #back:FFF4E5;line:D9761B {
+    .. 常量 ..
+    + GITHUB_API = 'https://api.github.com'
+    + DEFAULT_KEYWORDS
+    + PER_PAGE = 100
+    + TIMEOUT = 30
+    + MAX_RETRIES = 3
+    + RETRY_DELAY = 5
+    .. 入口函数 ..
+    + main()
+    .. 辅助函数 ..
+    + save_json(data: List[Dict], filepath: str) -> None  // 保存为 JSON
+    + save_csv(data: List[Dict], filepath: str) -> None  // 保存为 CSV（不含 README 和 commits 等长文本字段…
+    + save_summary(data: List[Dict], filepath: str) -> None  // 保存统计摘要
+  }
+
+}
+
+MOD ..> GitHubMCPCrawler : 引用
+
+note bottom : 模块 detector.crawler.github_crawler
+@enduml

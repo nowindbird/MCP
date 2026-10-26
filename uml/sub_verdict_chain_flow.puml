@@ -1,0 +1,78 @@
+@startuml
+' MPV-STYLE-BEGIN
+skinparam defaultFontName "Microsoft YaHei"
+skinparam monospacedFontName "Consolas"
+skinparam backgroundColor #FBFBFD
+skinparam shadowing true
+skinparam roundCorner 12
+skinparam linetype ortho
+skinparam dpi 180
+skinparam ArrowColor #546E7A
+skinparam ArrowThickness 1.2
+skinparam ArrowFontSize 11
+skinparam ActivityBackgroundColor #DCEEFB
+skinparam ActivityBorderColor #2E6DA4
+skinparam ActivityBorderThickness 1.2
+skinparam ActivityFontColor #123A5A
+skinparam ActivityFontSize 13
+skinparam ActivityDiamondBackgroundColor #FFE8CC
+skinparam ActivityDiamondBorderColor #D9761B
+skinparam ActivityDiamondBorderThickness 1.2
+skinparam ActivityDiamondFontColor #7A3E00
+skinparam ActivityDiamondFontSize 12
+skinparam ActivityStartColor #2E7D32
+skinparam ActivityEndColor #C62828
+skinparam ActivityBarColor #546E7A
+skinparam ActivityArrowColor #546E7A
+skinparam PartitionBorderColor #9FB3C8
+skinparam PartitionBorderThickness 1.2
+skinparam PartitionBackgroundColor #F4F7FB
+skinparam PartitionFontColor #293845
+skinparam PartitionFontSize 13
+skinparam PartitionFontStyle bold
+skinparam NoteBackgroundColor #FFF8E1
+skinparam NoteBorderColor #D9A441
+skinparam NoteFontColor #4A3B12
+skinparam TitleFontSize 18
+skinparam TitleFontColor #1B2A3A
+skinparam TitleFontStyle bold
+skinparam TitleBorderThickness 0
+skinparam HeaderFontSize 11
+skinparam HeaderFontColor #7A8B99
+skinparam FooterFontSize 10
+skinparam FooterFontColor #9AA7B3
+' MPV-STYLE-END
+title 三层判定链：静态 → 语义 → 动态
+header
+  贯穿 scanner / align_rate / behavior_monitor
+endheader
+start
+partition "第一层 静态扫描" {
+  :M1-M7 正则 + 配置解析\n产出 CRITICAL / HIGH 命中数;
+}
+partition "第二层 语义对齐" {
+  :AST 硬事实 vs README 声明;
+  :输出 verdict_signal：\nCLEAN / WARN / DANGER;
+}
+partition "第三层 动态沙箱" {
+  :按 align 结果生成拦截规则;
+  :容器/模拟/回放三模式采集行为;
+  :输出 MALICIOUS / WARN /\nINCONCLUSIVE / CLEAN;
+}
+if (静态 CRIT/HIGH 达高档阈值
+或 align = DANGER?) then (是)
+  :HIGH_RISK_REVIEW;
+  stop
+endif
+if (有任一 WARN 级信号
+或 命中数达中档阈值?) then (是)
+  :REVIEW;
+  stop
+endif
+if (沙箱命中蜜罐?) then (是)
+  :升级为 MALICIOUS;
+  stop
+endif
+:LOW（放行）;
+stop
+@enduml

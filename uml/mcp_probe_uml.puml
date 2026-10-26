@@ -1,0 +1,129 @@
+@startuml
+' MPV-STYLE-BEGIN
+skinparam defaultFontName "Microsoft YaHei"
+skinparam monospacedFontName "Consolas"
+skinparam backgroundColor #FBFBFD
+skinparam shadowing true
+skinparam roundCorner 10
+skinparam linetype ortho
+skinparam dpi 180
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam ArrowColor #5B6B7C
+skinparam ArrowThickness 1.1
+skinparam ArrowFontSize 11
+skinparam ClassBackgroundColor #FFFFFF
+skinparam ClassBorderColor #3D5A80
+skinparam ClassBorderThickness 1.2
+skinparam ClassFontColor #1B2A3A
+skinparam ClassFontSize 14
+skinparam ClassFontStyle bold
+skinparam ClassAttributeFontColor #33475B
+skinparam ClassAttributeFontSize 12
+skinparam ClassStereotypeFontSize 12
+skinparam PackageBackgroundColor #F4F7FB
+skinparam PackageBorderColor #9FB3C8
+skinparam PackageBorderThickness 1.2
+skinparam PackageFontColor #293845
+skinparam PackageFontSize 13
+skinparam PackageFontStyle bold
+skinparam NoteBackgroundColor #FFF8E1
+skinparam NoteBorderColor #D9A441
+skinparam NoteFontColor #4A3B12
+skinparam TitleFontSize 18
+skinparam TitleFontColor #1B2A3A
+skinparam TitleFontStyle bold
+skinparam TitleBorderThickness 0
+skinparam HeaderFontSize 11
+skinparam HeaderFontColor #7A8B99
+skinparam FooterFontSize 10
+skinparam FooterFontColor #9AA7B3
+hide empty members
+hide circle
+' MPV-STYLE-END
+skinparam defaultFontName "Microsoft YaHei"
+skinparam monospacedFontName "Consolas"
+skinparam backgroundColor #FBFBFD
+skinparam shadowing true
+skinparam roundCorner 10
+skinparam linetype ortho
+skinparam dpi 180
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam ArrowColor #5B6B7C
+skinparam ArrowThickness 1.1
+skinparam ArrowFontSize 11
+skinparam ClassBackgroundColor #FFFFFF
+skinparam ClassBorderColor #3D5A80
+skinparam ClassBorderThickness 1.2
+skinparam ClassFontColor #1B2A3A
+skinparam ClassFontSize 14
+skinparam ClassFontStyle bold
+skinparam ClassAttributeFontColor #33475B
+skinparam ClassAttributeFontSize 12
+skinparam ClassStereotypeFontSize 12
+skinparam PackageBackgroundColor #F4F7FB
+skinparam PackageBorderColor #9FB3C8
+skinparam PackageBorderThickness 1.2
+skinparam PackageFontColor #293845
+skinparam PackageFontSize 13
+skinparam PackageFontStyle bold
+skinparam NoteBackgroundColor #FFF8E1
+skinparam NoteBorderColor #D9A441
+skinparam NoteFontColor #4A3B12
+skinparam TitleFontSize 18
+skinparam TitleFontColor #1B2A3A
+skinparam TitleFontStyle bold
+skinparam TitleBorderThickness 0
+skinparam HeaderFontSize 11
+skinparam HeaderFontColor #7A8B99
+skinparam FooterFontSize 10
+skinparam FooterFontColor #9AA7B3
+hide empty members
+hide circle
+title mcp_probe.py  类图
+header
+  MPV-Detector · detector.executor
+endheader
+footer
+  由 uml_gen.py 依据源码 AST 自动生成
+endfooter
+
+package "detector.executor" {
+  class StdioClient #back:FFFFFF;line:3D5A80 {
+    .. 字段 ..
+    - proc
+    - _q
+    - _alive
+    - _read_stdout
+    - _drain_stderr
+    .. 构造 ..
+    +__init__(argv: List[str], cwd: str)
+    .. 方法 ..
+    +send(obj: Dict[str, Any]) -> bool
+    +request(obj: Dict[str, Any], timeout: float) -> Optional[Dict[str, Any]]  // 发送请求并等待 id 匹配的响应（自动跳过通知与其他 id）。
+    +terminate(grace: float)
+    .. 内部方法 ..
+    -_read_stdout()
+    -_drain_stderr()
+    -_next_line(deadline: float) -> Optional[str]
+  }
+  note bottom of StdioClient : 极简 MCP stdio JSON-RPC 客户端, 带行读取线程与…
+
+  class "mcp_probe.py\n<<模块级接口>>" as MOD #back:FFF4E5;line:D9761B {
+    .. 常量 ..
+    + PROTOCOL_VERSION = '2024-11-05'
+    .. 入口函数 ..
+    + main() -> int
+    .. 辅助函数 ..
+    + _dummy_value(schema: Dict[str, Any]) -> Any
+    + _dummy_object(schema: Dict[str, Any]) -> Dict[str, Any]
+    + build_tool_arguments(tool: Dict[str, Any]) -> Dict[str, Any]
+  }
+
+}
+
+MOD ..> StdioClient : 引用
+
+note bottom : 模块 detector.executor.mcp_probe
+@enduml

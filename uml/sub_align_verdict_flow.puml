@@ -1,0 +1,72 @@
+@startuml
+' MPV-STYLE-BEGIN
+skinparam defaultFontName "Microsoft YaHei"
+skinparam monospacedFontName "Consolas"
+skinparam backgroundColor #FBFBFD
+skinparam shadowing true
+skinparam roundCorner 12
+skinparam linetype ortho
+skinparam dpi 180
+skinparam ArrowColor #546E7A
+skinparam ArrowThickness 1.2
+skinparam ArrowFontSize 11
+skinparam ActivityBackgroundColor #DCEEFB
+skinparam ActivityBorderColor #2E6DA4
+skinparam ActivityBorderThickness 1.2
+skinparam ActivityFontColor #123A5A
+skinparam ActivityFontSize 13
+skinparam ActivityDiamondBackgroundColor #FFE8CC
+skinparam ActivityDiamondBorderColor #D9761B
+skinparam ActivityDiamondBorderThickness 1.2
+skinparam ActivityDiamondFontColor #7A3E00
+skinparam ActivityDiamondFontSize 12
+skinparam ActivityStartColor #2E7D32
+skinparam ActivityEndColor #C62828
+skinparam ActivityBarColor #546E7A
+skinparam ActivityArrowColor #546E7A
+skinparam PartitionBorderColor #9FB3C8
+skinparam PartitionBorderThickness 1.2
+skinparam PartitionBackgroundColor #F4F7FB
+skinparam PartitionFontColor #293845
+skinparam PartitionFontSize 13
+skinparam PartitionFontStyle bold
+skinparam NoteBackgroundColor #FFF8E1
+skinparam NoteBorderColor #D9A441
+skinparam NoteFontColor #4A3B12
+skinparam TitleFontSize 18
+skinparam TitleFontColor #1B2A3A
+skinparam TitleFontStyle bold
+skinparam TitleBorderThickness 0
+skinparam HeaderFontSize 11
+skinparam HeaderFontColor #7A8B99
+skinparam FooterFontSize 10
+skinparam FooterFontColor #9AA7B3
+' MPV-STYLE-END
+title 比率计算与投毒信号判定  Step 4-5
+header
+  detector/analyzer/align_rate.py
+endheader
+start
+:total_judged = support + conflict;
+if (total_judged > 0?) then (是)
+  :alignment_rate = support / total_judged\nconflict_rate  = conflict / total_judged;
+else (否)
+  :alignment_rate = 1.0\nconflict_rate = 0.0（无判定视为完全对齐）;
+endif
+:sec_total = security_support + security_conflict;
+if (sec_total > 0?) then (是)
+  :security_conflict_rate =\nsecurity_conflict / sec_total;
+else (否)
+  :security_conflict_rate = 0.0;
+endif
+:verdict_signal = CLEAN;
+if (conflict_count > 0?) then (是)
+  :升为 WARN;
+endif
+if (security_conflict_rate >= 0.3
+或 conflict_count >= 3?) then (是)
+  :升为 DANGER;
+endif
+:返回完整对齐结果字典;
+stop
+@enduml

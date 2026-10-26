@@ -1,0 +1,189 @@
+@startuml
+' MPV-STYLE-BEGIN
+skinparam defaultFontName "Microsoft YaHei"
+skinparam monospacedFontName "Consolas"
+skinparam backgroundColor #FBFBFD
+skinparam shadowing true
+skinparam roundCorner 10
+skinparam linetype ortho
+skinparam dpi 180
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam ArrowColor #5B6B7C
+skinparam ArrowThickness 1.1
+skinparam ArrowFontSize 11
+skinparam ClassBackgroundColor #FFFFFF
+skinparam ClassBorderColor #3D5A80
+skinparam ClassBorderThickness 1.2
+skinparam ClassFontColor #1B2A3A
+skinparam ClassFontSize 14
+skinparam ClassFontStyle bold
+skinparam ClassAttributeFontColor #33475B
+skinparam ClassAttributeFontSize 12
+skinparam ClassStereotypeFontSize 12
+skinparam PackageBackgroundColor #F4F7FB
+skinparam PackageBorderColor #9FB3C8
+skinparam PackageBorderThickness 1.2
+skinparam PackageFontColor #293845
+skinparam PackageFontSize 13
+skinparam PackageFontStyle bold
+skinparam NoteBackgroundColor #FFF8E1
+skinparam NoteBorderColor #D9A441
+skinparam NoteFontColor #4A3B12
+skinparam TitleFontSize 18
+skinparam TitleFontColor #1B2A3A
+skinparam TitleFontStyle bold
+skinparam TitleBorderThickness 0
+skinparam HeaderFontSize 11
+skinparam HeaderFontColor #7A8B99
+skinparam FooterFontSize 10
+skinparam FooterFontColor #9AA7B3
+hide empty members
+hide circle
+' MPV-STYLE-END
+skinparam defaultFontName "Microsoft YaHei"
+skinparam monospacedFontName "Consolas"
+skinparam backgroundColor #FBFBFD
+skinparam shadowing true
+skinparam roundCorner 10
+skinparam linetype ortho
+skinparam dpi 180
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam ArrowColor #5B6B7C
+skinparam ArrowThickness 1.1
+skinparam ArrowFontSize 11
+skinparam ClassBackgroundColor #FFFFFF
+skinparam ClassBorderColor #3D5A80
+skinparam ClassBorderThickness 1.2
+skinparam ClassFontColor #1B2A3A
+skinparam ClassFontSize 14
+skinparam ClassFontStyle bold
+skinparam ClassAttributeFontColor #33475B
+skinparam ClassAttributeFontSize 12
+skinparam ClassStereotypeFontSize 12
+skinparam PackageBackgroundColor #F4F7FB
+skinparam PackageBorderColor #9FB3C8
+skinparam PackageBorderThickness 1.2
+skinparam PackageFontColor #293845
+skinparam PackageFontSize 13
+skinparam PackageFontStyle bold
+skinparam NoteBackgroundColor #FFF8E1
+skinparam NoteBorderColor #D9A441
+skinparam NoteFontColor #4A3B12
+skinparam TitleFontSize 18
+skinparam TitleFontColor #1B2A3A
+skinparam TitleFontStyle bold
+skinparam TitleBorderThickness 0
+skinparam HeaderFontSize 11
+skinparam HeaderFontColor #7A8B99
+skinparam FooterFontSize 10
+skinparam FooterFontColor #9AA7B3
+hide empty members
+hide circle
+title behavior_monitor.py  类图
+header
+  MPV-Detector · detector.executor
+endheader
+footer
+  由 uml_gen.py 依据源码 AST 自动生成
+endfooter
+
+package "detector.executor" {
+  class Behavior #back:FFFFFF;line:3D5A80 {
+    .. 字段 ..
+    - __slots__
+    - category
+    - details
+    - timestamp
+    - severity
+    - rule_hit
+    .. 构造 ..
+    +__init__(category: str, details: Dict, severity: str)
+    .. 方法 ..
+    +to_dict() -> Dict
+  }
+  note bottom of Behavior : 单次被观测到的行为。
+
+  class MonitorReport #back:FFFFFF;line:3D5A80 {
+    .. 字段 ..
+    - rules
+    - behaviors
+    - violations
+    - blocks
+    - honeypot_hits
+    - errors
+    - review_requested
+    - final_verdict
+    - start_time
+    - end_time
+    .. 构造 ..
+    +__init__(rules: Dict)
+    .. 方法 ..
+    +start()
+    +stop()
+    +add_behavior(behavior: Behavior)
+    +to_dict() -> Dict
+    +print_summary()
+    .. 内部方法 ..
+    -_meaningful_count() -> int
+    -_determine_verdict()
+    -_match_rules(behavior: Behavior) -> Dict[str, Any]  // 把 behavior 和 rules 做比对，返回 {"action…
+  }
+  note bottom of MonitorReport : 运行一次插件后产出的完整监控报告。
+
+  class PythonInterceptor #back:FFFFFF;line:3D5A80 {
+    .. 字段 ..
+    - report
+    - _restore
+    - _active
+    .. 构造 ..
+    +__init__(report: MonitorReport)
+    .. 方法 ..
+    +install()
+    +uninstall()  // 恢复所有被 patch 的原始函数。
+    .. 内部方法 ..
+    -_patch(obj, attr, factory)
+  }
+  note bottom of PythonInterceptor : 在 Python 进程内 monkey-patch 关键函数，产生 …
+
+  class "behavior_monitor.py\n<<模块级接口>>" as MOD #back:FFF4E5;line:D9761B {
+    .. 常量 ..
+    + HERE
+    + PROJECT_ROOT = HERE.parent
+    + SANDBOX_DIR = HERE
+    + DEFAULT_OPEN_NOISE
+    + DEFAULT_SENSITIVE_PATTERNS
+    + ERROR_CATEGORIES
+    + _RE_EXECVE
+    + _RE_OPENAT
+    + _RE_CONNECT4
+    + _RE_CONNECT6
+    + _RE_CAPTURE_STR
+    + _RE_TCP_DST
+    + _RE_DNS_Q
+    .. 入口函数 ..
+    + main()
+    .. 辅助函数 ..
+    + parse_strace_text(text: str) -> Dict[str, List]  // 解析 strace -f -e trace=execve,opena…
+    + parse_tcpdump_text(text: str, honeypot_indicators: Optional[List[str]]) -> Dict[str, List]  // 解析 tcpdump -nn -A 文本: DNS 查询域名 / T…
+    + parse_event_log(strace_text: str, tcpdump_text: str, honeypot_indicators: Optional[List[str]], noise_prefixes: Optional[List[str]], sensitive_patterns: Optional[List[str]]) -> List[Behavior]  // 把采集文本转换成 Behavior 列表（纯函数，无副作用，可单测）…
+    + run_simulate(rules: Dict, entry_point: str, timeout_seconds: int) -> MonitorReport  // SIMULATE 模式: 在当前 Python 进程里执行 entr…
+    + run_fixture(rules: Dict, strace_file: str, net_file: str) -> MonitorReport  // FIXTURE 模式: 解析已保存的 strace/tcpdump …
+    + _docker(args: List[str], timeout: int) -> subprocess.CompletedProcess
+    + docker_available() -> bool  // 探测 Docker 守护进程是否可用（CLI 存在 != 守护进程在…
+    + image_exists(image: str) -> bool
+    + build_sandbox_image(image: Optional[str]) -> bool  // 构建沙箱镜像（含 strace/tcpdump/python/nod…
+    + detect_run_command(repo_dir: Path) -> Optional[str]  // 尽力推断插件启动命令（可用 --run-command 覆盖）。
+    + _honeypot_env() -> List[str]  // 构造注入到目标容器的蜜罐环境变量（含常见别名，扩大诱饵面）。
+    + _write_honeypot_fixtures(host_dir: Path) -> Path  // 在宿主机准备蜜罐文件目录（挂载到容器 /opt/honeypot，入…
+    + run_docker(rules: Dict, repo_dir: Path, run_command: Optional[str], timeout_seconds: Optional[int], image: Optional[str], keep_container: bool) -> MonitorReport  // DOCKER 模式: 隔离容器运行目标插件 + strace 采集 …
+  }
+
+}
+
+PythonInterceptor ..> Behavior : 使用
+MOD ..> Behavior : 引用
+
+note bottom : 模块 detector.executor.behavior_monitor
+@enduml

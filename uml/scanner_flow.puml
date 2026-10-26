@@ -1,0 +1,75 @@
+@startuml
+' MPV-STYLE-BEGIN
+skinparam defaultFontName "Microsoft YaHei"
+skinparam monospacedFontName "Consolas"
+skinparam backgroundColor #FBFBFD
+skinparam shadowing true
+skinparam roundCorner 12
+skinparam linetype ortho
+skinparam dpi 180
+skinparam ArrowColor #546E7A
+skinparam ArrowThickness 1.2
+skinparam ArrowFontSize 11
+skinparam ActivityBackgroundColor #DCEEFB
+skinparam ActivityBorderColor #2E6DA4
+skinparam ActivityBorderThickness 1.2
+skinparam ActivityFontColor #123A5A
+skinparam ActivityFontSize 13
+skinparam ActivityDiamondBackgroundColor #FFE8CC
+skinparam ActivityDiamondBorderColor #D9761B
+skinparam ActivityDiamondBorderThickness 1.2
+skinparam ActivityDiamondFontColor #7A3E00
+skinparam ActivityDiamondFontSize 12
+skinparam ActivityStartColor #2E7D32
+skinparam ActivityEndColor #C62828
+skinparam ActivityBarColor #546E7A
+skinparam ActivityArrowColor #546E7A
+skinparam PartitionBorderColor #9FB3C8
+skinparam PartitionBorderThickness 1.2
+skinparam PartitionBackgroundColor #F4F7FB
+skinparam PartitionFontColor #293845
+skinparam PartitionFontSize 13
+skinparam PartitionFontStyle bold
+skinparam NoteBackgroundColor #FFF8E1
+skinparam NoteBorderColor #D9A441
+skinparam NoteFontColor #4A3B12
+skinparam TitleFontSize 18
+skinparam TitleFontColor #1B2A3A
+skinparam TitleFontStyle bold
+skinparam TitleBorderThickness 0
+skinparam HeaderFontSize 11
+skinparam HeaderFontColor #7A8B99
+skinparam FooterFontSize 10
+skinparam FooterFontColor #9AA7B3
+' MPV-STYLE-END
+title scanner/scanner.py 静态扫描流程
+start
+if (带 --manifest 批量模式?) then (是)
+  :创建输出目录，读取 shard CSV;
+  while (还有仓库行?) is (是)
+    if (缓存目录不存在或为空?) then (是)
+      :标记 not_scanned，写单仓库 JSON;
+    else (否)
+      :scan_repo(cache)\nos.walk 遍历，should_skip_dir 过滤目录;
+      while (还有文件?) is (是)
+        if (is_scannable 可扫?) then (是)
+          :scan_file 模式正则匹配，累计 hits;
+          if (是 MCP 配置文件?) then (是)
+            :scan_mcp_config 结构化 JSON 解析（M7 增强）;
+          endif
+        endif
+      endwhile
+      :verdict=pending，写单仓库 JSON，打印严重性统计;
+    endif
+  endwhile (否)
+  :写 _shard_summary_*.json;
+else (否，单仓库模式)
+  :scan_repo(repo_dir) 同上扫描;
+  :组装结果 JSON;
+  if (指定 --out?) then (是)
+    :写结果文件;
+  endif
+  :打印结果 JSON;
+endif
+stop
+@enduml

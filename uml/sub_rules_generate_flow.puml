@@ -1,0 +1,67 @@
+@startuml
+' MPV-STYLE-BEGIN
+skinparam defaultFontName "Microsoft YaHei"
+skinparam monospacedFontName "Consolas"
+skinparam backgroundColor #FBFBFD
+skinparam shadowing true
+skinparam roundCorner 12
+skinparam linetype ortho
+skinparam dpi 180
+skinparam ArrowColor #546E7A
+skinparam ArrowThickness 1.2
+skinparam ArrowFontSize 11
+skinparam ActivityBackgroundColor #DCEEFB
+skinparam ActivityBorderColor #2E6DA4
+skinparam ActivityBorderThickness 1.2
+skinparam ActivityFontColor #123A5A
+skinparam ActivityFontSize 13
+skinparam ActivityDiamondBackgroundColor #FFE8CC
+skinparam ActivityDiamondBorderColor #D9761B
+skinparam ActivityDiamondBorderThickness 1.2
+skinparam ActivityDiamondFontColor #7A3E00
+skinparam ActivityDiamondFontSize 12
+skinparam ActivityStartColor #2E7D32
+skinparam ActivityEndColor #C62828
+skinparam ActivityBarColor #546E7A
+skinparam ActivityArrowColor #546E7A
+skinparam PartitionBorderColor #9FB3C8
+skinparam PartitionBorderThickness 1.2
+skinparam PartitionBackgroundColor #F4F7FB
+skinparam PartitionFontColor #293845
+skinparam PartitionFontSize 13
+skinparam PartitionFontStyle bold
+skinparam NoteBackgroundColor #FFF8E1
+skinparam NoteBorderColor #D9A441
+skinparam NoteFontColor #4A3B12
+skinparam TitleFontSize 18
+skinparam TitleFontColor #1B2A3A
+skinparam TitleFontStyle bold
+skinparam TitleBorderThickness 0
+skinparam HeaderFontSize 11
+skinparam HeaderFontColor #7A8B99
+skinparam FooterFontSize 10
+skinparam FooterFontColor #9AA7B3
+' MPV-STYLE-END
+title generate_rules()  沙箱规则生成
+header
+  detector/executor/sandbox_rules.py
+endheader
+start
+if (传入 align_result?) then (否)
+  :内部调用 compute_alignment(repo_dir);
+  if (调用失败?) then (是)
+    :打印警告，使用空事实兜底结果\nverdict_signal = UNKNOWN;
+  endif
+endif
+:facts = align_result["facts"];
+:allowlist = extract_allowlist(facts, repo_dir);
+:blocklist = 通用 UNIVERSAL_BLOCK_PATTERNS\n+ HONEYPOT_INDICATORS;
+:violation_actions 初始化：\nconflict 阈值 0.3 / 高危 0.6\nauto_block = [credential, obfuscation]\nreview = [subprocess, file_access]\nhoneypot_protected = True;
+if (verdict_signal == DANGER
+或 security_conflict_rate >= 0.3?) then (是)
+  :进入「严格模式」：\n阈值收紧到 0.1\nnetwork 加入 auto_block\n清空 network_endpoints 白名单;
+endif
+:组装 rules 字典（repo / version 2.0 /\ngenerated_at / source 统计 /\nallowlist / blocklist / violation_actions）;
+:返回 rules（将由 behavior_monitor 消费）;
+stop
+@enduml

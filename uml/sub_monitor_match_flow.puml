@@ -1,0 +1,92 @@
+@startuml
+' MPV-STYLE-BEGIN
+skinparam defaultFontName "Microsoft YaHei"
+skinparam monospacedFontName "Consolas"
+skinparam backgroundColor #FBFBFD
+skinparam shadowing true
+skinparam roundCorner 12
+skinparam linetype ortho
+skinparam dpi 180
+skinparam ArrowColor #546E7A
+skinparam ArrowThickness 1.2
+skinparam ArrowFontSize 11
+skinparam ActivityBackgroundColor #DCEEFB
+skinparam ActivityBorderColor #2E6DA4
+skinparam ActivityBorderThickness 1.2
+skinparam ActivityFontColor #123A5A
+skinparam ActivityFontSize 13
+skinparam ActivityDiamondBackgroundColor #FFE8CC
+skinparam ActivityDiamondBorderColor #D9761B
+skinparam ActivityDiamondBorderThickness 1.2
+skinparam ActivityDiamondFontColor #7A3E00
+skinparam ActivityDiamondFontSize 12
+skinparam ActivityStartColor #2E7D32
+skinparam ActivityEndColor #C62828
+skinparam ActivityBarColor #546E7A
+skinparam ActivityArrowColor #546E7A
+skinparam PartitionBorderColor #9FB3C8
+skinparam PartitionBorderThickness 1.2
+skinparam PartitionBackgroundColor #F4F7FB
+skinparam PartitionFontColor #293845
+skinparam PartitionFontSize 13
+skinparam PartitionFontStyle bold
+skinparam NoteBackgroundColor #FFF8E1
+skinparam NoteBorderColor #D9A441
+skinparam NoteFontColor #4A3B12
+skinparam TitleFontSize 18
+skinparam TitleFontColor #1B2A3A
+skinparam TitleFontStyle bold
+skinparam TitleBorderThickness 0
+skinparam HeaderFontSize 11
+skinparam HeaderFontColor #7A8B99
+skinparam FooterFontSize 10
+skinparam FooterFontColor #9AA7B3
+' MPV-STYLE-END
+title _match_rules()  单条行为规则匹配
+header
+  detector/executor/behavior_monitor.py · MonitorReport
+endheader
+start
+partition "Step 1 蜜罐（最高优先级）" {
+  if (violation_actions.honeypot_protected?) then (是)
+    :把 details 序列化为小写字符串;
+    while (遍历 honeypot_indicators?) is (是)
+      if (指标出现在行为细节中?) then (是)
+        :返回 HONEYPOT_TRIGGER\n理由：蜜罐凭据被读取/外传;
+        stop
+      endif
+    endwhile (否)
+  endif
+}
+partition "Step 2 通用 blocklist" {
+  :取 argv / command / endpoint / path;
+  while (遍历 dangerous_patterns?) is (是)
+    if (正则命中（忽略大小写）?) then (是)
+      :返回 BLOCK\n理由：命中恶意模式;
+      stop
+    endif
+  endwhile (否)
+}
+partition "Step 3 allowlist 判定" {
+  switch (行为类别)
+  case (network)
+    if (allowlist 含 "*" 或该 host?) then (是)
+      :返回 ALLOW;
+      stop
+    else (否)
+      if (DNS 未解析到声明域名?) then (是)
+        :理由追加「DNS 未解析」;
+      endif
+      if (network ∈ auto_block_categories?) then (是)
+        :返回 BLOCK;
+      else (否)
+        :返回 ALLOW_MISS（记违规但不拦）;
+      endif
+    endif
+  case (file_access / subprocess 等)
+    :按 allowlist 路径前缀比对;
+  endswitch
+}
+:返回默认动作;
+stop
+@enduml

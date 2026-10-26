@@ -1,0 +1,85 @@
+@startuml
+' MPV-STYLE-BEGIN
+skinparam defaultFontName "Microsoft YaHei"
+skinparam monospacedFontName "Consolas"
+skinparam backgroundColor #FBFBFD
+skinparam shadowing true
+skinparam roundCorner 12
+skinparam linetype ortho
+skinparam dpi 180
+skinparam ArrowColor #546E7A
+skinparam ArrowThickness 1.2
+skinparam ArrowFontSize 11
+skinparam ActivityBackgroundColor #DCEEFB
+skinparam ActivityBorderColor #2E6DA4
+skinparam ActivityBorderThickness 1.2
+skinparam ActivityFontColor #123A5A
+skinparam ActivityFontSize 13
+skinparam ActivityDiamondBackgroundColor #FFE8CC
+skinparam ActivityDiamondBorderColor #D9761B
+skinparam ActivityDiamondBorderThickness 1.2
+skinparam ActivityDiamondFontColor #7A3E00
+skinparam ActivityDiamondFontSize 12
+skinparam ActivityStartColor #2E7D32
+skinparam ActivityEndColor #C62828
+skinparam ActivityBarColor #546E7A
+skinparam ActivityArrowColor #546E7A
+skinparam PartitionBorderColor #9FB3C8
+skinparam PartitionBorderThickness 1.2
+skinparam PartitionBackgroundColor #F4F7FB
+skinparam PartitionFontColor #293845
+skinparam PartitionFontSize 13
+skinparam PartitionFontStyle bold
+skinparam NoteBackgroundColor #FFF8E1
+skinparam NoteBorderColor #D9A441
+skinparam NoteFontColor #4A3B12
+skinparam TitleFontSize 18
+skinparam TitleFontColor #1B2A3A
+skinparam TitleFontStyle bold
+skinparam TitleBorderThickness 0
+skinparam HeaderFontSize 11
+skinparam HeaderFontColor #7A8B99
+skinparam FooterFontSize 10
+skinparam FooterFontColor #9AA7B3
+' MPV-STYLE-END
+title scan_mcp_config()  MCP 配置结构化解析
+header
+  detector/scanner/scanner.py · scan_mcp_config
+endheader
+start
+:json.loads(path.read_text("utf-8-sig"));
+if (解析失败?) then (是)
+  :返回 [];
+  stop
+endif
+:servers = data["mcpServers"] 或 data 本身;
+if (不是 dict?) then (是)
+  :返回 hits（空）;
+  stop
+endif
+while (还有 server?) is (是)
+  :取 command / args / env;
+  partition "command / args 检查" {
+    while (遍历可疑关键词表?) is (是)
+      :curl wget python -c node -e bash -c\npowershell Invoke- /tmp /dev/shm\nbase64 --decode rm -rf chmod 777 nohup;
+      if (出现在 command 或 args 中?) then (是)
+        :记 M7 命中\nCRITICAL「配置投毒:可疑命令」\n同一 server 只记一条;
+        break
+      endif
+    endwhile (否)
+  }
+  partition "env 凭据注入检查" {
+    if (env 是 dict?) then (是)
+      while (遍历 env 键?) is (是)
+        if (键名匹配 api_key/secret/token/
+password/credential?) then (是)
+          :记 M7 命中\nCRITICAL「env 凭据注入」\n同一 server 只记一条;
+          break
+        endif
+      endwhile (否)
+    endif
+  }
+endwhile (否)
+:返回 hits;
+stop
+@enduml

@@ -1,0 +1,84 @@
+@startuml
+' MPV-STYLE-BEGIN
+skinparam defaultFontName "Microsoft YaHei"
+skinparam monospacedFontName "Consolas"
+skinparam backgroundColor #FBFBFD
+skinparam shadowing true
+skinparam roundCorner 12
+skinparam linetype ortho
+skinparam dpi 180
+skinparam ArrowColor #546E7A
+skinparam ArrowThickness 1.2
+skinparam ArrowFontSize 11
+skinparam ActivityBackgroundColor #DCEEFB
+skinparam ActivityBorderColor #2E6DA4
+skinparam ActivityBorderThickness 1.2
+skinparam ActivityFontColor #123A5A
+skinparam ActivityFontSize 13
+skinparam ActivityDiamondBackgroundColor #FFE8CC
+skinparam ActivityDiamondBorderColor #D9761B
+skinparam ActivityDiamondBorderThickness 1.2
+skinparam ActivityDiamondFontColor #7A3E00
+skinparam ActivityDiamondFontSize 12
+skinparam ActivityStartColor #2E7D32
+skinparam ActivityEndColor #C62828
+skinparam ActivityBarColor #546E7A
+skinparam ActivityArrowColor #546E7A
+skinparam PartitionBorderColor #9FB3C8
+skinparam PartitionBorderThickness 1.2
+skinparam PartitionBackgroundColor #F4F7FB
+skinparam PartitionFontColor #293845
+skinparam PartitionFontSize 13
+skinparam PartitionFontStyle bold
+skinparam NoteBackgroundColor #FFF8E1
+skinparam NoteBorderColor #D9A441
+skinparam NoteFontColor #4A3B12
+skinparam TitleFontSize 18
+skinparam TitleFontColor #1B2A3A
+skinparam TitleFontStyle bold
+skinparam TitleBorderThickness 0
+skinparam HeaderFontSize 11
+skinparam HeaderFontColor #7A8B99
+skinparam FooterFontSize 10
+skinparam FooterFontColor #9AA7B3
+' MPV-STYLE-END
+title run_docker()  容器沙箱采集
+header
+  detector/executor/behavior_monitor.py
+endheader
+start
+:new MonitorReport(rules)，start();
+if (docker_available()?) then (否)
+  :记 sandbox_error「Docker 守护进程不可用」;
+  :返回报告并 stop;
+endif
+if (镜像存在?) then (否)
+  :build_sandbox_image(image);
+  if (构建失败?) then (是)
+    :记 sandbox_error，返回报告;
+    stop
+  endif
+endif
+:run_command = 入参 或 detect_run_command(repo_dir);
+if (推断不出启动命令?) then (是)
+  :记 sandbox_error，提示用 --run-command;
+  stop
+endif
+:_write_honeypot_fixtures() 生成蜜罐文件\n挂载到 /opt/honeypot（只读）;
+:_honeypot_env() 注入蜜罐环境变量\n（SSH key / credentials.json 等）;
+:docker run -d 启动目标容器\n（--network 隔离、挂载代码与蜜罐）;
+if (启动失败?) then (是)
+  :记 sandbox_error，返回报告;
+  stop
+endif
+:tcpdump sidecar 容器\n--network=container:<target> 旁路抓包;
+:容器内 strace -f 采集\nexecve/openat/connect/sendto;
+if (strace 缺失或超时?) then (是)
+  :降级：仅用网络数据;
+endif
+:docker cp 拷出 strace 日志与网络文本;
+:parse_event_log() 解析为行为事件\n逐条 add_behavior;
+:finally：_cleanup 停止并移除容器;
+:report.stop()，返回报告;
+stop
+@enduml

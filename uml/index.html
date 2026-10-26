@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>MPV-Detector · UML 图集</title>
+<style>
+  :root{--bg:#F7F9FC;--card:#FFFFFF;--line:#DDE4ED;--ink:#1B2A3A;--sub:#7A8B99;--accent:#2E6DA4;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font:15px/1.6 "Microsoft YaHei","PingFang SC",system-ui,sans-serif}
+  header{background:linear-gradient(135deg,#3D5A80,#2E6DA4);color:#fff;padding:28px 32px}
+  header h1{margin:0;font-size:22px;font-weight:700;letter-spacing:.5px}
+  header p{margin:6px 0 0;font-size:13px;opacity:.85}
+  main{max-width:1400px;margin:0 auto;padding:24px 32px 60px}
+  h2{font-size:17px;margin:28px 0 14px;padding-left:10px;border-left:4px solid var(--accent)}
+  h2 span{color:var(--sub);font-size:13px;font-weight:400;margin-left:8px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+  .card{margin:0;background:var(--card);border:1px solid var(--line);border-radius:10px;
+        overflow:hidden;cursor:zoom-in;box-shadow:0 1px 3px rgba(27,42,58,.07);
+        transition:transform .15s,box-shadow .15s}
+  .card:hover{transform:translateY(-3px);box-shadow:0 8px 20px rgba(27,42,58,.13)}
+  .card img{display:block;width:100%;height:190px;object-fit:contain;
+            background:#FBFBFD;padding:8px;border-bottom:1px solid var(--line)}
+  .card figcaption{padding:10px 12px 12px}
+  .card figcaption b{display:block;font-size:13.5px;word-break:break-all}
+  .card figcaption span{display:block;margin-top:3px;font-size:12px;color:var(--sub);line-height:1.5}
+  #lb{display:none;position:fixed;inset:0;background:rgba(20,28,38,.88);z-index:99;
+      cursor:zoom-out;padding:24px;overflow:auto}
+  #lb img{display:block;margin:0 auto;max-width:98%;background:#fff;border-radius:6px}
+  #lb .tip{position:fixed;top:14px;right:20px;color:#fff;font-size:13px;opacity:.8}
+</style>
+</head>
+<body>
+<header>
+  <h1>MPV-Detector · UML 图集</h1>
+  <p>共 59 张：10 张模块主流程 + 24 张函数级细分 + 25 张类图 · 由 uml_gen.py / flow_gen.py / flow_detail.py 生成，PlantUML 渲染</p>
+</header>
+<main>
+  <h2>模块主流程<span>10 张 · 每个模块一张</span></h2>
+  <div class="grid">
+      <figure class="card" onclick="openImg('00_pipeline_flow.png')">
+        <img loading="lazy" src="00_pipeline_flow.png" alt="00_pipeline_flow">
+        <figcaption><b>00_pipeline_flow</b><span>端到端总流水线：数据获取 → 静态分析 → 语义分析 → 动态验证</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('align_rate_flow.png')">
+        <img loading="lazy" src="align_rate_flow.png" alt="align_rate_flow">
+        <figcaption><b>align_rate_flow</b><span>对齐率计算：AST 硬事实 vs 文档声明 → CLEAN/WARN/DANGER</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('behavior_monitor_flow.png')">
+        <img loading="lazy" src="behavior_monitor_flow.png" alt="behavior_monitor_flow">
+        <figcaption><b>behavior_monitor_flow</b><span>沙箱行为监控：docker / simulate / fixture 三模式与退出码语义</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('docgen_flow.png')">
+        <img loading="lazy" src="docgen_flow.png" alt="docgen_flow">
+        <figcaption><b>docgen_flow</b><span>LLM 语义文档生成：本地代码模式 / GitHub 模式两条分支</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('github_crawler_flow.png')">
+        <img loading="lazy" src="github_crawler_flow.png" alt="github_crawler_flow">
+        <figcaption><b>github_crawler_flow</b><span>仓库爬取：搜索 API 分页、速率限制、字段归一化、落盘</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('normalize_flow.png')">
+        <img loading="lazy" src="normalize_flow.png" alt="normalize_flow">
+        <figcaption><b>normalize_flow</b><span>结果规范化：无代码仓库 benign 降级为 not_scanned</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('report_flow.png')">
+        <img loading="lazy" src="report_flow.png" alt="report_flow">
+        <figcaption><b>report_flow</b><span>统计报告：模式命中 / 严重性 / 隐藏行为分布</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('run_flow_flow.png')">
+        <img loading="lazy" src="run_flow_flow.png" alt="run_flow_flow">
+        <figcaption><b>run_flow_flow</b><span>一键跑完编排：Ollama 拉起 → docgen 补齐 → 逐仓库对齐 → 判定汇总</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('sandbox_rules_flow.png')">
+        <img loading="lazy" src="sandbox_rules_flow.png" alt="sandbox_rules_flow">
+        <figcaption><b>sandbox_rules_flow</b><span>沙箱规则生成：对齐结果映射为拦截规则</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('scanner_flow.png')">
+        <img loading="lazy" src="scanner_flow.png" alt="scanner_flow">
+        <figcaption><b>scanner_flow</b><span>静态扫描：批量/单仓库两种模式，M1-M7 模式命中与配置增强</span></figcaption>
+      </figure>
+  </div>
+  <h2>函数级细分流程<span>24 张 · 画到单个函数内部的分支与循环</span></h2>
+  <div class="grid">
+      <figure class="card" onclick="openImg('sub_align_claims_flow.png')">
+        <img loading="lazy" src="sub_align_claims_flow.png" alt="sub_align_claims_flow">
+        <figcaption><b>sub_align_claims_flow</b><span>extract_claims()：README 逐行拆原子声明，一行只归一个类别</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('sub_align_facts_flow.png')">
+        <img loading="lazy" src="sub_align_facts_flow.png" alt="sub_align_facts_flow">
+        <figcaption><b>sub_align_facts_flow</b><span>硬事实收集：Python AST + JS/Go/Rust 正则，五类合并去重</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('sub_align_judge_flow.png')">
+        <img loading="lazy" src="sub_align_judge_flow.png" alt="sub_align_judge_flow">
+        <figcaption><b>sub_align_judge_flow</b><span>对齐判定：有事实无声明→conflict，有声明无事实→unknown，双全→support</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('sub_align_verdict_flow.png')">
+        <img loading="lazy" src="sub_align_verdict_flow.png" alt="sub_align_verdict_flow">
+        <figcaption><b>sub_align_verdict_flow</b><span>比率计算与信号升级：conflict→WARN，安全矛盾率≥0.3 或矛盾≥3→DANGER</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('sub_crawler_filter_flow.png')">
+        <img loading="lazy" src="sub_crawler_filter_flow.png" alt="sub_crawler_filter_flow">
+        <figcaption><b>sub_crawler_filter_flow</b><span>apply_client_filters()：star/fork 区间与创建时间区间客户端兜底</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('sub_crawler_request_flow.png')">
+        <img loading="lazy" src="sub_crawler_request_flow.png" alt="sub_crawler_request_flow">
+        <figcaption><b>sub_crawler_request_flow</b><span>_request()：MAX_RETRIES 重试 + 403/422/502/503 退避 + 限速等待</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('sub_crawler_search_flow.png')">
+        <img loading="lazy" src="sub_crawler_search_flow.png" alt="sub_crawler_search_flow">
+        <figcaption><b>sub_crawler_search_flow</b><span>search_repos()：按 star 降序分页拉取，主动限速与末尾判定</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('sub_docgen_prompt_flow.png')">
+        <img loading="lazy" src="sub_docgen_prompt_flow.png" alt="sub_docgen_prompt_flow">
+        <figcaption><b>sub_docgen_prompt_flow</b><span>build_user_prompt()：仓库信息 + README + 关键代码 + 五段输出模板</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('sub_docgen_select_files_flow.png')">
+        <img loading="lazy" src="sub_docgen_select_files_flow.png" alt="sub_docgen_select_files_flow">
+        <figcaption><b>sub_docgen_select_files_flow</b><span>select_key_files()：按 MCP 关键词与路径深度打分，取前 N 个文件</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('sub_monitor_docker_flow.png')">
+        <img loading="lazy" src="sub_monitor_docker_flow.png" alt="sub_monitor_docker_flow">
+        <figcaption><b>sub_monitor_docker_flow</b><span>run_docker()：镜像 → 启动命令 → 蜜罐挂载 → strace + tcpdump 采集</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('sub_monitor_fixture_flow.png')">
+        <img loading="lazy" src="sub_monitor_fixture_flow.png" alt="sub_monitor_fixture_flow">
+        <figcaption><b>sub_monitor_fixture_flow</b><span>run_fixture()：读取已保存 strace/抓包文本，离线回放解析</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('sub_monitor_match_flow.png')">
+        <img loading="lazy" src="sub_monitor_match_flow.png" alt="sub_monitor_match_flow">
+        <figcaption><b>sub_monitor_match_flow</b><span>_match_rules()：蜜罐 → blocklist → allowlist 三级匹配</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('sub_monitor_simulate_flow.png')">
+        <img loading="lazy" src="sub_monitor_simulate_flow.png" alt="sub_monitor_simulate_flow">
+        <figcaption><b>sub_monitor_simulate_flow</b><span>run_simulate()：猴子补丁钩子 → 进程内 exec → 异常捕获 → 卸载钩子</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('sub_monitor_verdict_flow.png')">
+        <img loading="lazy" src="sub_monitor_verdict_flow.png" alt="sub_monitor_verdict_flow">
+        <figcaption><b>sub_monitor_verdict_flow</b><span>_determine_verdict()：MALICIOUS/WARN/INCONCLUSIVE/CLEAN 判定顺序</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('sub_probe_main_flow.png')">
+        <img loading="lazy" src="sub_probe_main_flow.png" alt="sub_probe_main_flow">
+        <figcaption><b>sub_probe_main_flow</b><span>探针主流程：strace 包裹 → initialize → tools/list → tools/call 触发执行</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('sub_rules_generate_flow.png')">
+        <img loading="lazy" src="sub_rules_generate_flow.png" alt="sub_rules_generate_flow">
+        <figcaption><b>sub_rules_generate_flow</b><span>generate_rules()：facts→allowlist、blocklist、violation_actions 与严格模式</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('sub_runflow_ollama_flow.png')">
+        <img loading="lazy" src="sub_runflow_ollama_flow.png" alt="sub_runflow_ollama_flow">
+        <figcaption><b>sub_runflow_ollama_flow</b><span>ensure_ollama()：探测端口 → which/LOCALAPPDATA 找 exe → 自动拉起 → 轮询</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('sub_runflow_report_flow.png')">
+        <img loading="lazy" src="sub_runflow_report_flow.png" alt="sub_runflow_report_flow">
+        <figcaption><b>sub_runflow_report_flow</b><span>报告输出：flow_results.csv 明细 + flow_report.md 分布统计</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('sub_runflow_verdict_flow.png')">
+        <img loading="lazy" src="sub_runflow_verdict_flow.png" alt="sub_runflow_verdict_flow">
+        <figcaption><b>sub_runflow_verdict_flow</b><span>final_verdict()：align 信号 + CRIT/HIGH 命中数 → HIGH_RISK_REVIEW/REVIEW/LOW</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('sub_scanner_mcp_config_flow.png')">
+        <img loading="lazy" src="sub_scanner_mcp_config_flow.png" alt="sub_scanner_mcp_config_flow">
+        <figcaption><b>sub_scanner_mcp_config_flow</b><span>scan_mcp_config()：JSON 解析 mcpServers，可疑命令与 env 凭据注入</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('sub_scanner_scan_file_flow.png')">
+        <img loading="lazy" src="sub_scanner_scan_file_flow.png" alt="sub_scanner_scan_file_flow">
+        <figcaption><b>sub_scanner_scan_file_flow</b><span>scan_file()：二进制过滤 → P2 隐藏指令 → 逐行正则 → eval 密度 → 去重</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('sub_scanner_scan_repo_flow.png')">
+        <img loading="lazy" src="sub_scanner_scan_repo_flow.png" alt="sub_scanner_scan_repo_flow">
+        <figcaption><b>sub_scanner_scan_repo_flow</b><span>scan_repo()：os.walk 遍历、目录/文件双重过滤、M7 配置增强</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('sub_scanner_severity_flow.png')">
+        <img loading="lazy" src="sub_scanner_severity_flow.png" alt="sub_scanner_severity_flow">
+        <figcaption><b>sub_scanner_severity_flow</b><span>severity_for()：M3 在配置文件升 CRITICAL，代码文件降 MEDIUM</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('sub_verdict_chain_flow.png')">
+        <img loading="lazy" src="sub_verdict_chain_flow.png" alt="sub_verdict_chain_flow">
+        <figcaption><b>sub_verdict_chain_flow</b><span>三层判定链总览：静态 → 语义 → 动态，最终落到分档结论</span></figcaption>
+      </figure>
+  </div>
+  <h2>类图<span>25 张 · 每个代码文件一张</span></h2>
+  <div class="grid">
+      <figure class="card" onclick="openImg('aggregate_uml.png')">
+        <img loading="lazy" src="aggregate_uml.png" alt="aggregate_uml">
+        <figcaption><b>aggregate_uml</b><span>由源码 AST 自动生成</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('align_rate_uml.png')">
+        <img loading="lazy" src="align_rate_uml.png" alt="align_rate_uml">
+        <figcaption><b>align_rate_uml</b><span>由源码 AST 自动生成</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('behavior_monitor_uml.png')">
+        <img loading="lazy" src="behavior_monitor_uml.png" alt="behavior_monitor_uml">
+        <figcaption><b>behavior_monitor_uml</b><span>由源码 AST 自动生成</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('build_dataset_uml.png')">
+        <img loading="lazy" src="build_dataset_uml.png" alt="build_dataset_uml">
+        <figcaption><b>build_dataset_uml</b><span>由源码 AST 自动生成</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('build_dataset_v2_uml.png')">
+        <img loading="lazy" src="build_dataset_v2_uml.png" alt="build_dataset_v2_uml">
+        <figcaption><b>build_dataset_v2_uml</b><span>由源码 AST 自动生成</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('cache_inventory_uml.png')">
+        <img loading="lazy" src="cache_inventory_uml.png" alt="cache_inventory_uml">
+        <figcaption><b>cache_inventory_uml</b><span>由源码 AST 自动生成</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('cli_uml.png')">
+        <img loading="lazy" src="cli_uml.png" alt="cli_uml">
+        <figcaption><b>cli_uml</b><span>由源码 AST 自动生成</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('config_uml.png')">
+        <img loading="lazy" src="config_uml.png" alt="config_uml">
+        <figcaption><b>config_uml</b><span>由源码 AST 自动生成</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('docgen_uml.png')">
+        <img loading="lazy" src="docgen_uml.png" alt="docgen_uml">
+        <figcaption><b>docgen_uml</b><span>由源码 AST 自动生成</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('fetch_api_selective_uml.png')">
+        <img loading="lazy" src="fetch_api_selective_uml.png" alt="fetch_api_selective_uml">
+        <figcaption><b>fetch_api_selective_uml</b><span>由源码 AST 自动生成</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('fetch_retry_uml.png')">
+        <img loading="lazy" src="fetch_retry_uml.png" alt="fetch_retry_uml">
+        <figcaption><b>fetch_retry_uml</b><span>由源码 AST 自动生成</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('fetch_small_repos_uml.png')">
+        <img loading="lazy" src="fetch_small_repos_uml.png" alt="fetch_small_repos_uml">
+        <figcaption><b>fetch_small_repos_uml</b><span>由源码 AST 自动生成</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('fetch_tarballs2_uml.png')">
+        <img loading="lazy" src="fetch_tarballs2_uml.png" alt="fetch_tarballs2_uml">
+        <figcaption><b>fetch_tarballs2_uml</b><span>由源码 AST 自动生成</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('fetch_tarballs_uml.png')">
+        <img loading="lazy" src="fetch_tarballs_uml.png" alt="fetch_tarballs_uml">
+        <figcaption><b>fetch_tarballs_uml</b><span>由源码 AST 自动生成</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('github_crawler_uml.png')">
+        <img loading="lazy" src="github_crawler_uml.png" alt="github_crawler_uml">
+        <figcaption><b>github_crawler_uml</b><span>由源码 AST 自动生成</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('infer_mcp_doc_uml.png')">
+        <img loading="lazy" src="infer_mcp_doc_uml.png" alt="infer_mcp_doc_uml">
+        <figcaption><b>infer_mcp_doc_uml</b><span>由源码 AST 自动生成</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('mcp_probe_uml.png')">
+        <img loading="lazy" src="mcp_probe_uml.png" alt="mcp_probe_uml">
+        <figcaption><b>mcp_probe_uml</b><span>由源码 AST 自动生成</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('normalize_uml.png')">
+        <img loading="lazy" src="normalize_uml.png" alt="normalize_uml">
+        <figcaption><b>normalize_uml</b><span>由源码 AST 自动生成</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('organize_plugins_uml.png')">
+        <img loading="lazy" src="organize_plugins_uml.png" alt="organize_plugins_uml">
+        <figcaption><b>organize_plugins_uml</b><span>由源码 AST 自动生成</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('pipeline_uml.png')">
+        <img loading="lazy" src="pipeline_uml.png" alt="pipeline_uml">
+        <figcaption><b>pipeline_uml</b><span>由源码 AST 自动生成</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('report_uml.png')">
+        <img loading="lazy" src="report_uml.png" alt="report_uml">
+        <figcaption><b>report_uml</b><span>由源码 AST 自动生成</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('run_flow_uml.png')">
+        <img loading="lazy" src="run_flow_uml.png" alt="run_flow_uml">
+        <figcaption><b>run_flow_uml</b><span>由源码 AST 自动生成</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('sandbox_rules_uml.png')">
+        <img loading="lazy" src="sandbox_rules_uml.png" alt="sandbox_rules_uml">
+        <figcaption><b>sandbox_rules_uml</b><span>由源码 AST 自动生成</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('scanner_uml.png')">
+        <img loading="lazy" src="scanner_uml.png" alt="scanner_uml">
+        <figcaption><b>scanner_uml</b><span>由源码 AST 自动生成</span></figcaption>
+      </figure>
+      <figure class="card" onclick="openImg('train_lora_uml.png')">
+        <img loading="lazy" src="train_lora_uml.png" alt="train_lora_uml">
+        <figcaption><b>train_lora_uml</b><span>由源码 AST 自动生成</span></figcaption>
+      </figure>
+  </div>
+</main>
+<div id="lb" onclick="this.style.display='none'"><div class="tip">点击任意处关闭</div><img id="lbimg" src="" alt=""></div>
+<script>
+function openImg(src){{
+  document.getElementById('lbimg').src=src;
+  document.getElementById('lb').style.display='block';
+}}
+document.addEventListener('keydown',e=>{{if(e.key==='Escape')document.getElementById('lb').style.display='none';}});
+</script>
+</body>
+</html>

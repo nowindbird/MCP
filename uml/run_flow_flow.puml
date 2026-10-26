@@ -1,0 +1,79 @@
+@startuml
+' MPV-STYLE-BEGIN
+skinparam defaultFontName "Microsoft YaHei"
+skinparam monospacedFontName "Consolas"
+skinparam backgroundColor #FBFBFD
+skinparam shadowing true
+skinparam roundCorner 12
+skinparam linetype ortho
+skinparam dpi 180
+skinparam ArrowColor #546E7A
+skinparam ArrowThickness 1.2
+skinparam ArrowFontSize 11
+skinparam ActivityBackgroundColor #DCEEFB
+skinparam ActivityBorderColor #2E6DA4
+skinparam ActivityBorderThickness 1.2
+skinparam ActivityFontColor #123A5A
+skinparam ActivityFontSize 13
+skinparam ActivityDiamondBackgroundColor #FFE8CC
+skinparam ActivityDiamondBorderColor #D9761B
+skinparam ActivityDiamondBorderThickness 1.2
+skinparam ActivityDiamondFontColor #7A3E00
+skinparam ActivityDiamondFontSize 12
+skinparam ActivityStartColor #2E7D32
+skinparam ActivityEndColor #C62828
+skinparam ActivityBarColor #546E7A
+skinparam ActivityArrowColor #546E7A
+skinparam PartitionBorderColor #9FB3C8
+skinparam PartitionBorderThickness 1.2
+skinparam PartitionBackgroundColor #F4F7FB
+skinparam PartitionFontColor #293845
+skinparam PartitionFontSize 13
+skinparam PartitionFontStyle bold
+skinparam NoteBackgroundColor #FFF8E1
+skinparam NoteBorderColor #D9A441
+skinparam NoteFontColor #4A3B12
+skinparam TitleFontSize 18
+skinparam TitleFontColor #1B2A3A
+skinparam TitleFontStyle bold
+skinparam TitleBorderThickness 0
+skinparam HeaderFontSize 11
+skinparam HeaderFontColor #7A8B99
+skinparam FooterFontSize 10
+skinparam FooterFontColor #9AA7B3
+' MPV-STYLE-END
+title pipeline/run_flow.py 一键跑完流程
+start
+:解析参数（--local-root 缺省回落到 config.LARGE_REPO_SOURCE）;
+:加载 targets 目标清单;
+if (清单为空或不存在?) then (是)
+  :打印错误，返回 1;
+  stop
+endif
+if (未 --no-docgen 且未 --no-ollama-check?) then (是)
+  :ensure_ollama(model)\n检查 11434 端口 /api/tags，\n不在 PATH 则探测 LOCALAPPDATA/ProgramFiles\n自动拉起 ollama serve;
+endif
+if (存在缺失 generated_doc.md 的目标?) then (是)
+  :step 1/4  调用 docgen 补齐语义文档;
+else (否)
+  :step 1/4  全部已有文档，跳过;
+endif
+:加载 scan_summary（静态扫描 CRIT/HIGH 命中）;
+:step 2/4  逐仓库循环;
+while (还有目标仓库?) is (是)
+  if (已有 align_result.json 且未 --force?) then (是)
+    :直接读取缓存结果;
+  else (否)
+    if (本地目录存在?) then (是)
+      :compute_alignment(repo_dir);
+      :写 align_result.json;
+    else (否)
+      :打印跳过;
+    endif
+  endif
+  :final_verdict(align 信号, scan 命中)\n综合判定;
+endwhile (否)
+:step 3/4  verdict 汇总;
+:step 4/4  写 flow_results.csv 与 flow_report.md;
+stop
+@enduml

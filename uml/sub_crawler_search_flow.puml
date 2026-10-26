@@ -1,0 +1,72 @@
+@startuml
+' MPV-STYLE-BEGIN
+skinparam defaultFontName "Microsoft YaHei"
+skinparam monospacedFontName "Consolas"
+skinparam backgroundColor #FBFBFD
+skinparam shadowing true
+skinparam roundCorner 12
+skinparam linetype ortho
+skinparam dpi 180
+skinparam ArrowColor #546E7A
+skinparam ArrowThickness 1.2
+skinparam ArrowFontSize 11
+skinparam ActivityBackgroundColor #DCEEFB
+skinparam ActivityBorderColor #2E6DA4
+skinparam ActivityBorderThickness 1.2
+skinparam ActivityFontColor #123A5A
+skinparam ActivityFontSize 13
+skinparam ActivityDiamondBackgroundColor #FFE8CC
+skinparam ActivityDiamondBorderColor #D9761B
+skinparam ActivityDiamondBorderThickness 1.2
+skinparam ActivityDiamondFontColor #7A3E00
+skinparam ActivityDiamondFontSize 12
+skinparam ActivityStartColor #2E7D32
+skinparam ActivityEndColor #C62828
+skinparam ActivityBarColor #546E7A
+skinparam ActivityArrowColor #546E7A
+skinparam PartitionBorderColor #9FB3C8
+skinparam PartitionBorderThickness 1.2
+skinparam PartitionBackgroundColor #F4F7FB
+skinparam PartitionFontColor #293845
+skinparam PartitionFontSize 13
+skinparam PartitionFontStyle bold
+skinparam NoteBackgroundColor #FFF8E1
+skinparam NoteBorderColor #D9A441
+skinparam NoteFontColor #4A3B12
+skinparam TitleFontSize 18
+skinparam TitleFontColor #1B2A3A
+skinparam TitleFontStyle bold
+skinparam TitleBorderThickness 0
+skinparam HeaderFontSize 11
+skinparam HeaderFontColor #7A8B99
+skinparam FooterFontSize 10
+skinparam FooterFontColor #9AA7B3
+' MPV-STYLE-END
+title search_repos()  关键词搜索（自动分页）
+header
+  detector/crawler/github_crawler.py
+endheader
+start
+:query = build_query(keyword, filters);
+:page = 1，total_fetched = 0;
+while (total_fetched < max_results?) is (是)
+  :_check_rate_limit()\n（剩余 ≤5 次时主动等待到 reset）;
+  :params = q / sort=stars / order=desc /\nper_page=PER_PAGE / page;
+  :_request(/search/repositories);
+  if (返回为空?) then (是)
+    :break（请求失败）;
+  endif
+  :items = data["items"];
+  if (items 为空?) then (是)
+    :break（本页无结果）;
+  endif
+  :results.extend(items)\ntotal_fetched += len(items);
+  if (len(items) < PER_PAGE?) then (是)
+    :break（非整页，已到末尾）;
+  endif
+  :page += 1;
+  :sleep(1) 避免次级速率限制;
+endwhile (否)
+:截断到 max_results 后返回;
+stop
+@enduml

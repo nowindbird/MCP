@@ -1,0 +1,74 @@
+@startuml
+' MPV-STYLE-BEGIN
+skinparam defaultFontName "Microsoft YaHei"
+skinparam monospacedFontName "Consolas"
+skinparam backgroundColor #FBFBFD
+skinparam shadowing true
+skinparam roundCorner 12
+skinparam linetype ortho
+skinparam dpi 180
+skinparam ArrowColor #546E7A
+skinparam ArrowThickness 1.2
+skinparam ArrowFontSize 11
+skinparam ActivityBackgroundColor #DCEEFB
+skinparam ActivityBorderColor #2E6DA4
+skinparam ActivityBorderThickness 1.2
+skinparam ActivityFontColor #123A5A
+skinparam ActivityFontSize 13
+skinparam ActivityDiamondBackgroundColor #FFE8CC
+skinparam ActivityDiamondBorderColor #D9761B
+skinparam ActivityDiamondBorderThickness 1.2
+skinparam ActivityDiamondFontColor #7A3E00
+skinparam ActivityDiamondFontSize 12
+skinparam ActivityStartColor #2E7D32
+skinparam ActivityEndColor #C62828
+skinparam ActivityBarColor #546E7A
+skinparam ActivityArrowColor #546E7A
+skinparam PartitionBorderColor #9FB3C8
+skinparam PartitionBorderThickness 1.2
+skinparam PartitionBackgroundColor #F4F7FB
+skinparam PartitionFontColor #293845
+skinparam PartitionFontSize 13
+skinparam PartitionFontStyle bold
+skinparam NoteBackgroundColor #FFF8E1
+skinparam NoteBorderColor #D9A441
+skinparam NoteFontColor #4A3B12
+skinparam TitleFontSize 18
+skinparam TitleFontColor #1B2A3A
+skinparam TitleFontStyle bold
+skinparam TitleBorderThickness 0
+skinparam HeaderFontSize 11
+skinparam HeaderFontColor #7A8B99
+skinparam FooterFontSize 10
+skinparam FooterFontColor #9AA7B3
+' MPV-STYLE-END
+title mcp_probe.py  探针主流程
+header
+  detector/executor/mcp_probe.py · main
+endheader
+start
+:解析参数：--cmd / --cwd / --strace-out /\n--strace-syscalls / --timeout / --max-tools;
+:deadline = 启动时间 + timeout;
+if (未禁用 strace 且 找到 strace?) then (是)
+  :argv = strace -f -qq -e trace=execve,openat,\nconnect,sendto -o strace-out + 插件命令;
+else (否)
+  :argv = 直接启动插件\n（打印降级警告，无系统调用采集）;
+endif
+:StdioClient(argv, cwd) 以 stdio 启动插件;
+if (--no-probe?) then (是)
+  :仅运行目标，不发 JSON-RPC;
+else (否)
+  :initialize（protocolVersion + clientInfo）;
+  :发送 notifications/initialized;
+  :tools/list → 得到工具清单;
+  while (还有工具 且 未超时 且 < max_tools?) is (是)
+    :build_tool_arguments() 构造哑元参数;
+    :tools/call 真正触发工具执行\n（这才是行为采集的关键）;
+  endwhile (否)
+  :resources/list 与 prompts/list\n（覆盖 M9 资源/提示词面）;
+endif
+:剩余时间 > 0 则 sleep 最多 3 秒\n给插件完成异步外传动作;
+:finally：client.terminate() 结束进程;
+:打印工具数与耗时，返回 0;
+stop
+@enduml

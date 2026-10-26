@@ -1,0 +1,80 @@
+@startuml
+' MPV-STYLE-BEGIN
+skinparam defaultFontName "Microsoft YaHei"
+skinparam monospacedFontName "Consolas"
+skinparam backgroundColor #FBFBFD
+skinparam shadowing true
+skinparam roundCorner 12
+skinparam linetype ortho
+skinparam dpi 180
+skinparam ArrowColor #546E7A
+skinparam ArrowThickness 1.2
+skinparam ArrowFontSize 11
+skinparam ActivityBackgroundColor #DCEEFB
+skinparam ActivityBorderColor #2E6DA4
+skinparam ActivityBorderThickness 1.2
+skinparam ActivityFontColor #123A5A
+skinparam ActivityFontSize 13
+skinparam ActivityDiamondBackgroundColor #FFE8CC
+skinparam ActivityDiamondBorderColor #D9761B
+skinparam ActivityDiamondBorderThickness 1.2
+skinparam ActivityDiamondFontColor #7A3E00
+skinparam ActivityDiamondFontSize 12
+skinparam ActivityStartColor #2E7D32
+skinparam ActivityEndColor #C62828
+skinparam ActivityBarColor #546E7A
+skinparam ActivityArrowColor #546E7A
+skinparam PartitionBorderColor #9FB3C8
+skinparam PartitionBorderThickness 1.2
+skinparam PartitionBackgroundColor #F4F7FB
+skinparam PartitionFontColor #293845
+skinparam PartitionFontSize 13
+skinparam PartitionFontStyle bold
+skinparam NoteBackgroundColor #FFF8E1
+skinparam NoteBorderColor #D9A441
+skinparam NoteFontColor #4A3B12
+skinparam TitleFontSize 18
+skinparam TitleFontColor #1B2A3A
+skinparam TitleFontStyle bold
+skinparam TitleBorderThickness 0
+skinparam HeaderFontSize 11
+skinparam HeaderFontColor #7A8B99
+skinparam FooterFontSize 10
+skinparam FooterFontColor #9AA7B3
+' MPV-STYLE-END
+title ensure_ollama()  模型可用性保障
+header
+  detector/pipeline/run_flow.py
+endheader
+start
+:GET {OLLAMA_HOST}/api/tags\n（超时 5 秒）;
+if (返回 200?) then (是)
+  if (模型在已拉取列表中?) then (是)
+    :打印「Ollama 就绪」;
+    :返回 True;
+    stop
+  else (否)
+    :提示先执行 ollama pull <model>;
+    :返回 False;
+    stop
+  endif
+endif
+:打印「未运行，尝试自动启动 ollama serve」;
+:candidates = shutil.which("ollama")\n+ LOCALAPPDATA/Programs/Ollama\n+ ProgramFiles/Ollama\n+ ProgramFiles(x86)/Ollama\n（不依赖用户名与盘符）;
+:exe = 第一个真实存在的可执行文件;
+if (找到 ollama.exe?) then (否)
+  :提示手动启动;
+  :返回 False;
+  stop
+endif
+:subprocess.Popen([exe, "serve"])\nWindows 下 CREATE_NO_WINDOW;
+while (轮询 12 次，每次 2 秒?) is (是)
+  if (接口返回 200?) then (是)
+    :打印「已自动启动」，返回 True;
+    stop
+  endif
+endwhile (否)
+:打印「启动超时，请手动启动」;
+:返回 False;
+stop
+@enduml

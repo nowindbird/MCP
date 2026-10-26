@@ -1,0 +1,75 @@
+@startuml
+' MPV-STYLE-BEGIN
+skinparam defaultFontName "Microsoft YaHei"
+skinparam monospacedFontName "Consolas"
+skinparam backgroundColor #FBFBFD
+skinparam shadowing true
+skinparam roundCorner 12
+skinparam linetype ortho
+skinparam dpi 180
+skinparam ArrowColor #546E7A
+skinparam ArrowThickness 1.2
+skinparam ArrowFontSize 11
+skinparam ActivityBackgroundColor #DCEEFB
+skinparam ActivityBorderColor #2E6DA4
+skinparam ActivityBorderThickness 1.2
+skinparam ActivityFontColor #123A5A
+skinparam ActivityFontSize 13
+skinparam ActivityDiamondBackgroundColor #FFE8CC
+skinparam ActivityDiamondBorderColor #D9761B
+skinparam ActivityDiamondBorderThickness 1.2
+skinparam ActivityDiamondFontColor #7A3E00
+skinparam ActivityDiamondFontSize 12
+skinparam ActivityStartColor #2E7D32
+skinparam ActivityEndColor #C62828
+skinparam ActivityBarColor #546E7A
+skinparam ActivityArrowColor #546E7A
+skinparam PartitionBorderColor #9FB3C8
+skinparam PartitionBorderThickness 1.2
+skinparam PartitionBackgroundColor #F4F7FB
+skinparam PartitionFontColor #293845
+skinparam PartitionFontSize 13
+skinparam PartitionFontStyle bold
+skinparam NoteBackgroundColor #FFF8E1
+skinparam NoteBorderColor #D9A441
+skinparam NoteFontColor #4A3B12
+skinparam TitleFontSize 18
+skinparam TitleFontColor #1B2A3A
+skinparam TitleFontStyle bold
+skinparam TitleBorderThickness 0
+skinparam HeaderFontSize 11
+skinparam HeaderFontColor #7A8B99
+skinparam FooterFontSize 10
+skinparam FooterFontColor #9AA7B3
+' MPV-STYLE-END
+title executor/behavior_monitor.py 沙箱行为监控流程
+start
+:解析参数（--mode docker/simulate/fixture）;
+if (--check-docker 或 --build-image?) then (是)
+  :探测 Docker / 构建沙箱镜像后退出;
+  stop
+endif
+:加载 rules.json（sandbox_rules 产物）;
+switch (运行模式)
+case (docker)
+  :run_docker：构建/启动容器，\nstrace + tcpdump 采集系统调用与网络;
+case (simulate)
+  :run_simulate：PythonInterceptor\n猴子补丁钩子监控敏感调用;
+case (fixture)
+  :run_fixture：解析既有 strace/tcpdump 文本;
+endswitch
+:MonitorReport.add_behavior 逐条行为\n_match_rules 匹配规则;
+:_determine_verdict 汇总判定;
+:print_summary 打印报告;
+if (指定 --output?) then (是)
+  :写报告 JSON;
+endif
+if (final_verdict == MALICIOUS?) then (是)
+  :exit 2;
+elseif (需人工审核?) then (是)
+  :exit 1;
+else (通过)
+  :exit 0;
+endif
+stop
+@enduml

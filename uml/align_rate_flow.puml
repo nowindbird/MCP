@@ -1,0 +1,70 @@
+@startuml
+' MPV-STYLE-BEGIN
+skinparam defaultFontName "Microsoft YaHei"
+skinparam monospacedFontName "Consolas"
+skinparam backgroundColor #FBFBFD
+skinparam shadowing true
+skinparam roundCorner 12
+skinparam linetype ortho
+skinparam dpi 180
+skinparam ArrowColor #546E7A
+skinparam ArrowThickness 1.2
+skinparam ArrowFontSize 11
+skinparam ActivityBackgroundColor #DCEEFB
+skinparam ActivityBorderColor #2E6DA4
+skinparam ActivityBorderThickness 1.2
+skinparam ActivityFontColor #123A5A
+skinparam ActivityFontSize 13
+skinparam ActivityDiamondBackgroundColor #FFE8CC
+skinparam ActivityDiamondBorderColor #D9761B
+skinparam ActivityDiamondBorderThickness 1.2
+skinparam ActivityDiamondFontColor #7A3E00
+skinparam ActivityDiamondFontSize 12
+skinparam ActivityStartColor #2E7D32
+skinparam ActivityEndColor #C62828
+skinparam ActivityBarColor #546E7A
+skinparam ActivityArrowColor #546E7A
+skinparam PartitionBorderColor #9FB3C8
+skinparam PartitionBorderThickness 1.2
+skinparam PartitionBackgroundColor #F4F7FB
+skinparam PartitionFontColor #293845
+skinparam PartitionFontSize 13
+skinparam PartitionFontStyle bold
+skinparam NoteBackgroundColor #FFF8E1
+skinparam NoteBorderColor #D9A441
+skinparam NoteFontColor #4A3B12
+skinparam TitleFontSize 18
+skinparam TitleFontColor #1B2A3A
+skinparam TitleFontStyle bold
+skinparam TitleBorderThickness 0
+skinparam HeaderFontSize 11
+skinparam HeaderFontColor #7A8B99
+skinparam FooterFontSize 10
+skinparam FooterFontColor #9AA7B3
+' MPV-STYLE-END
+title analyzer/align_rate.py 对齐率计算流程（compute_alignment）
+start
+:detect_languages 探测仓库语言构成;
+partition "Step1 收集硬事实" {
+  :extract_python_facts  AST 遍历 Python 调用;
+  :extract_js/go/rust_facts  正则提取;
+  :按五类合并去重（上限 200 条）;
+  :has_hard_facts = 是否存在任一硬事实;
+}
+:extract_readme 取 README;
+:extract_claims 提取文档声明;
+partition "Step3 对齐判定" {
+  while (遍历五个安全类别?) is (是)
+    if (有硬事实 且 无声明?) then (是)
+      :判 conflict（隐藏行为，关键投毒信号）;
+    elseif (有声明 且 有事实?) then (是)
+      :判 support;
+    else (双方皆无)
+      :跳过;
+    endif
+  endwhile (否)
+}
+:计算 alignment_rate / conflict_rate / security_conflict_rate;
+:综合得出 verdict_signal = CLEAN / WARN / DANGER;
+stop
+@enduml

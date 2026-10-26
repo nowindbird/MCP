@@ -1,0 +1,74 @@
+@startuml
+' MPV-STYLE-BEGIN
+skinparam defaultFontName "Microsoft YaHei"
+skinparam monospacedFontName "Consolas"
+skinparam backgroundColor #FBFBFD
+skinparam shadowing true
+skinparam roundCorner 12
+skinparam linetype ortho
+skinparam dpi 180
+skinparam ArrowColor #546E7A
+skinparam ArrowThickness 1.2
+skinparam ArrowFontSize 11
+skinparam ActivityBackgroundColor #DCEEFB
+skinparam ActivityBorderColor #2E6DA4
+skinparam ActivityBorderThickness 1.2
+skinparam ActivityFontColor #123A5A
+skinparam ActivityFontSize 13
+skinparam ActivityDiamondBackgroundColor #FFE8CC
+skinparam ActivityDiamondBorderColor #D9761B
+skinparam ActivityDiamondBorderThickness 1.2
+skinparam ActivityDiamondFontColor #7A3E00
+skinparam ActivityDiamondFontSize 12
+skinparam ActivityStartColor #2E7D32
+skinparam ActivityEndColor #C62828
+skinparam ActivityBarColor #546E7A
+skinparam ActivityArrowColor #546E7A
+skinparam PartitionBorderColor #9FB3C8
+skinparam PartitionBorderThickness 1.2
+skinparam PartitionBackgroundColor #F4F7FB
+skinparam PartitionFontColor #293845
+skinparam PartitionFontSize 13
+skinparam PartitionFontStyle bold
+skinparam NoteBackgroundColor #FFF8E1
+skinparam NoteBorderColor #D9A441
+skinparam NoteFontColor #4A3B12
+skinparam TitleFontSize 18
+skinparam TitleFontColor #1B2A3A
+skinparam TitleFontStyle bold
+skinparam TitleBorderThickness 0
+skinparam HeaderFontSize 11
+skinparam HeaderFontColor #7A8B99
+skinparam FooterFontSize 10
+skinparam FooterFontColor #9AA7B3
+' MPV-STYLE-END
+title analyzer/docgen.py 语义文档生成流程
+start
+:解析参数（backend/api-base/model/token/limit/force/delay）;
+if (--local-root 且 --repo-list?) then (是，本地代码模式)
+  :load_targets_from_file 读取仓库清单;
+  :输出目录默认 output/gen_docs_800;
+else (否，GitHub 模式)
+  :读 mcp插件/插件路径清单.json;
+  if (清单不存在?) then (是)
+    :报错退出;
+    stop
+  endif
+endif
+:初始化 GitHubFetcher 与 LLMClient;
+while (还有插件?) is (是)
+  :定位代码来源（本地仓库目录 / storage_path）;
+  :read_local_code_files / select_key_files 选关键文件;
+  :read_local_readme / get_readme 取 README;
+  :build_user_prompt 组装提示词;
+  :llm.generate 调 LLM 生成语义文档;
+  if (生成成功?) then (是)
+    :写 generated_doc.md，success++;
+  else (否)
+    :记录失败，failed++;
+  endif
+  :sleep(delay) 限速;
+endwhile (否)
+:打印 success/skipped/failed 统计;
+stop
+@enduml

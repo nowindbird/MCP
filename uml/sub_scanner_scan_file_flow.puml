@@ -1,0 +1,99 @@
+@startuml
+' MPV-STYLE-BEGIN
+skinparam defaultFontName "Microsoft YaHei"
+skinparam monospacedFontName "Consolas"
+skinparam backgroundColor #FBFBFD
+skinparam shadowing true
+skinparam roundCorner 12
+skinparam linetype ortho
+skinparam dpi 180
+skinparam ArrowColor #546E7A
+skinparam ArrowThickness 1.2
+skinparam ArrowFontSize 11
+skinparam ActivityBackgroundColor #DCEEFB
+skinparam ActivityBorderColor #2E6DA4
+skinparam ActivityBorderThickness 1.2
+skinparam ActivityFontColor #123A5A
+skinparam ActivityFontSize 13
+skinparam ActivityDiamondBackgroundColor #FFE8CC
+skinparam ActivityDiamondBorderColor #D9761B
+skinparam ActivityDiamondBorderThickness 1.2
+skinparam ActivityDiamondFontColor #7A3E00
+skinparam ActivityDiamondFontSize 12
+skinparam ActivityStartColor #2E7D32
+skinparam ActivityEndColor #C62828
+skinparam ActivityBarColor #546E7A
+skinparam ActivityArrowColor #546E7A
+skinparam PartitionBorderColor #9FB3C8
+skinparam PartitionBorderThickness 1.2
+skinparam PartitionBackgroundColor #F4F7FB
+skinparam PartitionFontColor #293845
+skinparam PartitionFontSize 13
+skinparam PartitionFontStyle bold
+skinparam NoteBackgroundColor #FFF8E1
+skinparam NoteBorderColor #D9A441
+skinparam NoteFontColor #4A3B12
+skinparam TitleFontSize 18
+skinparam TitleFontColor #1B2A3A
+skinparam TitleFontStyle bold
+skinparam TitleBorderThickness 0
+skinparam HeaderFontSize 11
+skinparam HeaderFontColor #7A8B99
+skinparam FooterFontSize 10
+skinparam FooterFontColor #9AA7B3
+' MPV-STYLE-END
+title scan_file()  单文件模式扫描
+header
+  detector/scanner/scanner.py · scan_file
+endheader
+start
+:raw = path.read_bytes();
+if (读取失败 OSError/PermissionError?) then (是)
+  :返回 [] 无命中;
+  stop
+endif
+if (文件 > 8MB?) then (是)
+  :返回 [] （跳过超大文件）;
+  stop
+endif
+if (前 8KB 含空字节?) then (是)
+  :返回 [] （二进制）;
+  stop
+endif
+:text = raw.decode("utf-8-sig")\n（剥离 BOM，避免误判不可见 Unicode）;
+if (前 4096 字符中 U+FFFD > 50?) then (是)
+  :返回 [] （二进制伪装成文本）;
+  stop
+endif
+partition "P2 隐藏指令检测" {
+  :正则匹配 <!-- ... --> HTML 注释\n内部含指令性关键词才记命中;
+  :正则匹配 [//]:#(...) Markdown 隐藏注释;
+  :匹配不可见 Unicode\n(U+200B/200C/200D/2060/FEFF)\n每文件只记一次;
+  :三类命中统一并入 hits（HIGH）;
+}
+partition "逐行模式匹配" {
+  while (还有行?) is (是)
+    if (行长 > 2000?) then (是)
+      :截断到 2000 字符\n（避免正则回溯过慢）;
+    endif
+    while (遍历 PATTERNS?) is (是)
+      if (pattern_id == P2?) then (是)
+        :跳过（已单独处理）;
+      else (否)
+        :re.search 匹配本行;
+        if (命中?) then (是)
+          :severity_for() 动态定级;
+          :记入 hits（行号 + 该行前 260 字符作证据）\n不 break：一行可命中多模式;
+        endif
+      endif
+    endwhile (否)
+  endwhile (否)
+}
+:统计全文 eval( 出现次数;
+if (eval 次数 >= 5?) then (是)
+  :追加 SC3「混淆:eval 高密度」MEDIUM;
+endif
+:按 (pattern_id, file, line) 去重;
+:返回去重视后的 hits;
+stop
+@enduml

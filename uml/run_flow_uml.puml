@@ -1,0 +1,114 @@
+@startuml
+' MPV-STYLE-BEGIN
+skinparam defaultFontName "Microsoft YaHei"
+skinparam monospacedFontName "Consolas"
+skinparam backgroundColor #FBFBFD
+skinparam shadowing true
+skinparam roundCorner 10
+skinparam linetype ortho
+skinparam dpi 180
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam ArrowColor #5B6B7C
+skinparam ArrowThickness 1.1
+skinparam ArrowFontSize 11
+skinparam ClassBackgroundColor #FFFFFF
+skinparam ClassBorderColor #3D5A80
+skinparam ClassBorderThickness 1.2
+skinparam ClassFontColor #1B2A3A
+skinparam ClassFontSize 14
+skinparam ClassFontStyle bold
+skinparam ClassAttributeFontColor #33475B
+skinparam ClassAttributeFontSize 12
+skinparam ClassStereotypeFontSize 12
+skinparam PackageBackgroundColor #F4F7FB
+skinparam PackageBorderColor #9FB3C8
+skinparam PackageBorderThickness 1.2
+skinparam PackageFontColor #293845
+skinparam PackageFontSize 13
+skinparam PackageFontStyle bold
+skinparam NoteBackgroundColor #FFF8E1
+skinparam NoteBorderColor #D9A441
+skinparam NoteFontColor #4A3B12
+skinparam TitleFontSize 18
+skinparam TitleFontColor #1B2A3A
+skinparam TitleFontStyle bold
+skinparam TitleBorderThickness 0
+skinparam HeaderFontSize 11
+skinparam HeaderFontColor #7A8B99
+skinparam FooterFontSize 10
+skinparam FooterFontColor #9AA7B3
+hide empty members
+hide circle
+' MPV-STYLE-END
+skinparam defaultFontName "Microsoft YaHei"
+skinparam monospacedFontName "Consolas"
+skinparam backgroundColor #FBFBFD
+skinparam shadowing true
+skinparam roundCorner 10
+skinparam linetype ortho
+skinparam dpi 180
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam ArrowColor #5B6B7C
+skinparam ArrowThickness 1.1
+skinparam ArrowFontSize 11
+skinparam ClassBackgroundColor #FFFFFF
+skinparam ClassBorderColor #3D5A80
+skinparam ClassBorderThickness 1.2
+skinparam ClassFontColor #1B2A3A
+skinparam ClassFontSize 14
+skinparam ClassFontStyle bold
+skinparam ClassAttributeFontColor #33475B
+skinparam ClassAttributeFontSize 12
+skinparam ClassStereotypeFontSize 12
+skinparam PackageBackgroundColor #F4F7FB
+skinparam PackageBorderColor #9FB3C8
+skinparam PackageBorderThickness 1.2
+skinparam PackageFontColor #293845
+skinparam PackageFontSize 13
+skinparam PackageFontStyle bold
+skinparam NoteBackgroundColor #FFF8E1
+skinparam NoteBorderColor #D9A441
+skinparam NoteFontColor #4A3B12
+skinparam TitleFontSize 18
+skinparam TitleFontColor #1B2A3A
+skinparam TitleFontStyle bold
+skinparam TitleBorderThickness 0
+skinparam HeaderFontSize 11
+skinparam HeaderFontColor #7A8B99
+skinparam FooterFontSize 10
+skinparam FooterFontColor #9AA7B3
+hide empty members
+hide circle
+title run_flow.py  类图
+header
+  MPV-Detector · detector.pipeline
+endheader
+footer
+  由 uml_gen.py 依据源码 AST 自动生成
+endfooter
+
+package "detector.pipeline" {
+  class "run_flow.py\n<<模块级接口>>" as MOD #back:FFF4E5;line:D9761B {
+    .. 常量 ..
+    + ROOT
+    + CRIT_TIER_HIGH = 10
+    + HIGH_TIER_HIGH = 50
+    + CRIT_TIER_MED = 1
+    + HIGH_TIER_MED = 5
+    .. 入口函数 ..
+    + main()
+    .. 辅助函数 ..
+    + ensure_ollama(model: str) -> bool  // 检查本地 Ollama 是否可用且含指定模型；不可用则尝试自动拉起。
+    + run_docgen(local_root, targets_file, out_dir, model)  // 批量 docgen（本地代码模式），已存在的跳过，断点续跑。
+    + load_targets(path)
+    + load_scan_summary(path)  // 读取扫描汇总 CSV → {owner_repo: (crit, h…
+    + final_verdict(align_signal, scan)  // 综合 align 信号 + 静态扫描命中，给最终判定档位。
+  }
+
+}
+
+
+note bottom : 模块 detector.pipeline.run_flow
+@enduml

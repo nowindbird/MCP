@@ -1,0 +1,155 @@
+@startuml
+' MPV-STYLE-BEGIN
+skinparam defaultFontName "Microsoft YaHei"
+skinparam monospacedFontName "Consolas"
+skinparam backgroundColor #FBFBFD
+skinparam shadowing true
+skinparam roundCorner 10
+skinparam linetype ortho
+skinparam dpi 180
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam ArrowColor #5B6B7C
+skinparam ArrowThickness 1.1
+skinparam ArrowFontSize 11
+skinparam ClassBackgroundColor #FFFFFF
+skinparam ClassBorderColor #3D5A80
+skinparam ClassBorderThickness 1.2
+skinparam ClassFontColor #1B2A3A
+skinparam ClassFontSize 14
+skinparam ClassFontStyle bold
+skinparam ClassAttributeFontColor #33475B
+skinparam ClassAttributeFontSize 12
+skinparam ClassStereotypeFontSize 12
+skinparam PackageBackgroundColor #F4F7FB
+skinparam PackageBorderColor #9FB3C8
+skinparam PackageBorderThickness 1.2
+skinparam PackageFontColor #293845
+skinparam PackageFontSize 13
+skinparam PackageFontStyle bold
+skinparam NoteBackgroundColor #FFF8E1
+skinparam NoteBorderColor #D9A441
+skinparam NoteFontColor #4A3B12
+skinparam TitleFontSize 18
+skinparam TitleFontColor #1B2A3A
+skinparam TitleFontStyle bold
+skinparam TitleBorderThickness 0
+skinparam HeaderFontSize 11
+skinparam HeaderFontColor #7A8B99
+skinparam FooterFontSize 10
+skinparam FooterFontColor #9AA7B3
+hide empty members
+hide circle
+' MPV-STYLE-END
+skinparam defaultFontName "Microsoft YaHei"
+skinparam monospacedFontName "Consolas"
+skinparam backgroundColor #FBFBFD
+skinparam shadowing true
+skinparam roundCorner 10
+skinparam linetype ortho
+skinparam dpi 180
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam ArrowColor #5B6B7C
+skinparam ArrowThickness 1.1
+skinparam ArrowFontSize 11
+skinparam ClassBackgroundColor #FFFFFF
+skinparam ClassBorderColor #3D5A80
+skinparam ClassBorderThickness 1.2
+skinparam ClassFontColor #1B2A3A
+skinparam ClassFontSize 14
+skinparam ClassFontStyle bold
+skinparam ClassAttributeFontColor #33475B
+skinparam ClassAttributeFontSize 12
+skinparam ClassStereotypeFontSize 12
+skinparam PackageBackgroundColor #F4F7FB
+skinparam PackageBorderColor #9FB3C8
+skinparam PackageBorderThickness 1.2
+skinparam PackageFontColor #293845
+skinparam PackageFontSize 13
+skinparam PackageFontStyle bold
+skinparam NoteBackgroundColor #FFF8E1
+skinparam NoteBorderColor #D9A441
+skinparam NoteFontColor #4A3B12
+skinparam TitleFontSize 18
+skinparam TitleFontColor #1B2A3A
+skinparam TitleFontStyle bold
+skinparam TitleBorderThickness 0
+skinparam HeaderFontSize 11
+skinparam HeaderFontColor #7A8B99
+skinparam FooterFontSize 10
+skinparam FooterFontColor #9AA7B3
+hide empty members
+hide circle
+title docgen.py  类图
+header
+  MPV-Detector · detector.analyzer
+endheader
+footer
+  由 uml_gen.py 依据源码 AST 自动生成
+endfooter
+
+package "detector.analyzer" {
+  class GitHubFetcher #back:FFFFFF;line:3D5A80 {
+    .. 字段 ..
+    - session
+    - rate_remaining
+    - rate_reset
+    .. 构造 ..
+    +__init__(token: Optional[str])
+    .. 方法 ..
+    +get_repo_tree(owner: str, repo: str, branch: str) -> List[Dict]  // 获取仓库文件树（递归，branch 默认 HEAD）。
+    +get_file_content(owner: str, repo: str, path: str) -> Optional[str]  // 获取文件原始内容；二进制文件（返回 JSON base64）时解码。
+    +get_readme(owner: str, repo: str) -> Optional[str]  // 获取 README 原始内容（纯文本）。
+    .. 内部方法 ..
+    -_request(url: str, params: Optional[Dict], headers: Optional[Dict]) -> Optional[Any]  // 带重试和速率限制的 GET 请求；返回 JSON / 文本 / No…
+  }
+  note bottom of GitHubFetcher : GitHub REST API 封装：文件树 / 文件内容 / RE…
+
+  class LLMClient #back:FFFFFF;line:3D5A80 {
+    .. 字段 ..
+    - backend
+    - api_base
+    - api_key
+    - model
+    .. 构造 ..
+    +__init__(backend: str, api_base: str, api_key: str, model: str)
+    .. 方法 ..
+    +generate(system_prompt: str, user_prompt: str) -> str
+    .. 内部方法 ..
+    -_call_openai(system_prompt: str, user_prompt: str) -> str
+    -_call_anthropic(system_prompt: str, user_prompt: str) -> str
+  }
+
+  class "docgen.py\n<<模块级接口>>" as MOD #back:FFF4E5;line:D9761B {
+    .. 常量 ..
+    + BASE_DIR
+    + PLUGIN_DIR
+    + INDEX_FILE
+    + GITHUB_API = 'https://api.github.com'
+    + TIMEOUT = 30
+    + MAX_RETRIES = 3
+    + RETRY_DELAY = 5
+    + MCP_FILE_KEYWORDS
+    + CODE_EXTENSIONS
+    + MAX_FILES_PER_REPO = 8
+    + MAX_FILE_CHARS = 8000
+    + MAX_FILE_BYTES = 8 * 1024 * 1024
+    + SKIP_DIR_NAMES
+    + SYSTEM_PROMPT
+    .. 入口函数 ..
+    + main()
+    .. 辅助函数 ..
+    + select_key_files(tree: List[Dict]) -> List[str]  // 从文件树中筛选 MCP 相关的关键代码文件（按相关性打分取前 N 个…
+    + read_local_code_files(repo_root: str) -> List[Dict]  // 从本地完整仓库目录读取 MCP 关键代码文件。
+    + read_local_readme(repo_root: str) -> Optional[str]  // 从本地仓库目录读取 README（区分大小写试探常见命名）。
+    + build_user_prompt(repo_info: Dict, code_files: List[Dict], readme: Optional[str]) -> str
+    + load_targets_from_file(repo_list_path: str) -> List[Dict]  // 读取清单文件（每行一个 owner_repo），构造本地目标列表。
+  }
+
+}
+
+MOD ..> GitHubFetcher : 引用
+
+note bottom : 模块 detector.analyzer.docgen
+@enduml

@@ -1,0 +1,72 @@
+@startuml
+' MPV-STYLE-BEGIN
+skinparam defaultFontName "Microsoft YaHei"
+skinparam monospacedFontName "Consolas"
+skinparam backgroundColor #FBFBFD
+skinparam shadowing true
+skinparam roundCorner 12
+skinparam linetype ortho
+skinparam dpi 180
+skinparam ArrowColor #546E7A
+skinparam ArrowThickness 1.2
+skinparam ArrowFontSize 11
+skinparam ActivityBackgroundColor #DCEEFB
+skinparam ActivityBorderColor #2E6DA4
+skinparam ActivityBorderThickness 1.2
+skinparam ActivityFontColor #123A5A
+skinparam ActivityFontSize 13
+skinparam ActivityDiamondBackgroundColor #FFE8CC
+skinparam ActivityDiamondBorderColor #D9761B
+skinparam ActivityDiamondBorderThickness 1.2
+skinparam ActivityDiamondFontColor #7A3E00
+skinparam ActivityDiamondFontSize 12
+skinparam ActivityStartColor #2E7D32
+skinparam ActivityEndColor #C62828
+skinparam ActivityBarColor #546E7A
+skinparam ActivityArrowColor #546E7A
+skinparam PartitionBorderColor #9FB3C8
+skinparam PartitionBorderThickness 1.2
+skinparam PartitionBackgroundColor #F4F7FB
+skinparam PartitionFontColor #293845
+skinparam PartitionFontSize 13
+skinparam PartitionFontStyle bold
+skinparam NoteBackgroundColor #FFF8E1
+skinparam NoteBorderColor #D9A441
+skinparam NoteFontColor #4A3B12
+skinparam TitleFontSize 18
+skinparam TitleFontColor #1B2A3A
+skinparam TitleFontStyle bold
+skinparam TitleBorderThickness 0
+skinparam HeaderFontSize 11
+skinparam HeaderFontColor #7A8B99
+skinparam FooterFontSize 10
+skinparam FooterFontColor #9AA7B3
+' MPV-STYLE-END
+title scan_repo()  仓库遍历扫描
+header
+  detector/scanner/scanner.py · scan_repo
+endheader
+start
+:repo_dir.exists();
+if (目录存在?) then (否)
+  :返回 (0, []);
+  stop
+endif
+while (os.walk 还有目录?) is (是)
+  :dirs[:] = 过滤掉 should_skip_dir 的目录\n(原地修改，影响后续递归);
+  while (目录内还有文件?) is (是)
+    :p = Path(root)/f;
+    if (is_scannable(p)?) then (否)
+      :跳过（扩展名/文件名不在 SCAN_EXTS）;
+    else (是)
+      :files_scanned += 1;
+      :all_hits += scan_file(p)\n单文件异常不影响整体;
+      if (文件名 ∈ MCP_CONFIG_FILENAMES?) then (是)
+        :all_hits += scan_mcp_config(p)\n结构化 JSON 解析（M7 增强）;
+      endif
+    endif
+  endwhile (否)
+endwhile (否)
+:返回 (files_scanned, all_hits);
+stop
+@enduml

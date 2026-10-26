@@ -1,0 +1,61 @@
+@startuml
+' MPV-STYLE-BEGIN
+skinparam defaultFontName "Microsoft YaHei"
+skinparam monospacedFontName "Consolas"
+skinparam backgroundColor #FBFBFD
+skinparam shadowing true
+skinparam roundCorner 12
+skinparam linetype ortho
+skinparam dpi 180
+skinparam ArrowColor #546E7A
+skinparam ArrowThickness 1.2
+skinparam ArrowFontSize 11
+skinparam ActivityBackgroundColor #DCEEFB
+skinparam ActivityBorderColor #2E6DA4
+skinparam ActivityBorderThickness 1.2
+skinparam ActivityFontColor #123A5A
+skinparam ActivityFontSize 13
+skinparam ActivityDiamondBackgroundColor #FFE8CC
+skinparam ActivityDiamondBorderColor #D9761B
+skinparam ActivityDiamondBorderThickness 1.2
+skinparam ActivityDiamondFontColor #7A3E00
+skinparam ActivityDiamondFontSize 12
+skinparam ActivityStartColor #2E7D32
+skinparam ActivityEndColor #C62828
+skinparam ActivityBarColor #546E7A
+skinparam ActivityArrowColor #546E7A
+skinparam PartitionBorderColor #9FB3C8
+skinparam PartitionBorderThickness 1.2
+skinparam PartitionBackgroundColor #F4F7FB
+skinparam PartitionFontColor #293845
+skinparam PartitionFontSize 13
+skinparam PartitionFontStyle bold
+skinparam NoteBackgroundColor #FFF8E1
+skinparam NoteBorderColor #D9A441
+skinparam NoteFontColor #4A3B12
+skinparam TitleFontSize 18
+skinparam TitleFontColor #1B2A3A
+skinparam TitleFontStyle bold
+skinparam TitleBorderThickness 0
+skinparam HeaderFontSize 11
+skinparam HeaderFontColor #7A8B99
+skinparam FooterFontSize 10
+skinparam FooterFontColor #9AA7B3
+' MPV-STYLE-END
+title build_user_prompt()  提示词组装
+header
+  detector/analyzer/docgen.py
+endheader
+start
+:拼「# 仓库信息」：\n名称 / 描述 / 语言 / Star / 主页;
+if (有 README?) then (是)
+  :截断前 3000 字符，\n以代码块形式附入;
+endif
+:拼「# 关键代码文件」;
+while (遍历选中的代码文件?) is (是)
+  :每个文件内容截断到\nMAX_FILE_CHARS，\n以 ## 文件: 路径 + 代码块 附入;
+endwhile (否)
+:追加任务指令（固定模板）\n要求严格按五段输出：\n1 插件概述\n2 工具列表（含输入参数/返回值/\n副作用/安全风险）\n3 权限与外部依赖\n4 潜在不一致\n5 投毒风险评估;
+:返回拼接后的完整提示词;
+stop
+@enduml

@@ -1,0 +1,89 @@
+@startuml
+' MPV-STYLE-BEGIN
+skinparam defaultFontName "Microsoft YaHei"
+skinparam monospacedFontName "Consolas"
+skinparam backgroundColor #FBFBFD
+skinparam shadowing true
+skinparam roundCorner 12
+skinparam linetype ortho
+skinparam dpi 180
+skinparam ArrowColor #546E7A
+skinparam ArrowThickness 1.2
+skinparam ArrowFontSize 11
+skinparam ActivityBackgroundColor #DCEEFB
+skinparam ActivityBorderColor #2E6DA4
+skinparam ActivityBorderThickness 1.2
+skinparam ActivityFontColor #123A5A
+skinparam ActivityFontSize 13
+skinparam ActivityDiamondBackgroundColor #FFE8CC
+skinparam ActivityDiamondBorderColor #D9761B
+skinparam ActivityDiamondBorderThickness 1.2
+skinparam ActivityDiamondFontColor #7A3E00
+skinparam ActivityDiamondFontSize 12
+skinparam ActivityStartColor #2E7D32
+skinparam ActivityEndColor #C62828
+skinparam ActivityBarColor #546E7A
+skinparam ActivityArrowColor #546E7A
+skinparam PartitionBorderColor #9FB3C8
+skinparam PartitionBorderThickness 1.2
+skinparam PartitionBackgroundColor #F4F7FB
+skinparam PartitionFontColor #293845
+skinparam PartitionFontSize 13
+skinparam PartitionFontStyle bold
+skinparam NoteBackgroundColor #FFF8E1
+skinparam NoteBorderColor #D9A441
+skinparam NoteFontColor #4A3B12
+skinparam TitleFontSize 18
+skinparam TitleFontColor #1B2A3A
+skinparam TitleFontStyle bold
+skinparam TitleBorderThickness 0
+skinparam HeaderFontSize 11
+skinparam HeaderFontColor #7A8B99
+skinparam FooterFontSize 10
+skinparam FooterFontColor #9AA7B3
+' MPV-STYLE-END
+title select_key_files()  关键文件打分筛选
+header
+  detector/analyzer/docgen.py
+endheader
+start
+while (遍历文件树条目?) is (是)
+  if (type != blob?) then (是)
+    :跳过（只看文件）;
+  else (否)
+    if (路径含 /test /node_modules /dist
+/build /.git /vendor /target?) then (是)
+      :跳过;
+    else (否)
+      if (后缀是 .min.js .map .lock .json
+.md .txt .yaml 等非源码?) then (是)
+        :跳过;
+      else (否)
+        if (后缀 ∉ CODE_EXTENSIONS?) then (是)
+          :跳过;
+        else (否)
+          :score = 0;
+          while (遍历 MCP_FILE_KEYWORDS?) is (是)
+            if (命中文件名?) then (是)
+              :score += 3（权重高）;
+            endif
+            if (命中路径?) then (是)
+              :score += 1（权重低）;
+            endif
+          endwhile (否)
+          if (位于根目录?) then (是)
+            :score += 2;
+          endif
+          :score += max(0, 5 - 路径深度)\n（越浅越重要）;
+          if (score > 0?) then (是)
+            :加入候选 (score, path);
+          endif
+        endif
+      endif
+    endif
+  endif
+endwhile (否)
+:按分数降序排序;
+:取前 MAX_FILES_PER_REPO 个路径;
+stop
+@enduml
