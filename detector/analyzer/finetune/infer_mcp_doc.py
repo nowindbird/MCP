@@ -30,6 +30,8 @@ import torch
 from peft import PeftModel
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 
+from detector.config import MODEL_BASE_DIR, MODEL_ADAPTER_DIR
+
 PROMPT_TPL = "{instruction}\n\n[代码]:\n{code}\n\n[输出]:\n"
 
 INSTRUCTION = (
@@ -104,8 +106,10 @@ def generate(model, tokenizer, code: str, max_new_tokens: int) -> str:
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--model_dir", required=True)
-    ap.add_argument("--adapter_dir", required=True)
+    ap.add_argument("--model_dir", default=str(MODEL_BASE_DIR),
+                    help=f"基座模型目录（默认 {MODEL_BASE_DIR}）")
+    ap.add_argument("--adapter_dir", default=str(MODEL_ADAPTER_DIR),
+                    help=f"LoRA adapter 目录（默认 {MODEL_ADAPTER_DIR}）")
     ap.add_argument("--code-file", required=True, help=".py 文件或目录")
     ap.add_argument("--out", default="", help="输出 JSONL 路径（缺省打印 stdout）")
     ap.add_argument("--max_new_tokens", type=int, default=600)

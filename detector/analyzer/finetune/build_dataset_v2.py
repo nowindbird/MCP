@@ -3,6 +3,10 @@
 """
 build_dataset_v2.py — 构造 v2 训练语料：补恶意样本，1:4 恶意:良性
 =================================================================
+用法::
+
+    python -m detector.analyzer.finetune.build_dataset_v2
+
 恶意样本来源：
   1) 冒烟语料 6 个恶意样本（反向shell/隐藏BCC/SSH密钥外传/base64+eval/curl|bash/硬编码凭据外传）
   2) hexstrike-ai 高危工具（投毒扫描 suspicious，升级 security_declarations，
@@ -16,13 +20,20 @@ build_dataset_v2.py — 构造 v2 训练语料：补恶意样本，1:4 恶意:�
 import json
 import random
 
-SMOKE = "dataset_smoke.jsonl"   # 冒烟语料（14 条：8 良性 + 6 恶意）
-REAL = "dataset_real.jsonl"     # v1 正式语料
-OUT = "dataset_real_v2.jsonl"   # v2 输出（恶意增强）
+from detector.config import DATASET_SMOKE, DATASET_REAL, DATASET_REAL_V2
+
+SMOKE = str(DATASET_SMOKE)        # 冒烟语料（14 条：8 良性 + 6 恶意）
+REAL = str(DATASET_REAL)          # v1 正式语料
+OUT = str(DATASET_REAL_V2)        # v2 输出（恶意增强）
 RNG = random.Random(42)         # 固定随机种子，保证可复现
 
 # ---------- 1. 冒烟语料恶意样本（已知 5 个恶意索引；10/13 为凭据外传补标 hidden_flags） ----------
-smoke = [json.loads(l) for l in open(SMOKE, encoding="utf-8") if l.strip()]  # 读取冒烟语料
+def _load_jsonl(path) -> list:
+    with open(path, encoding="utf-8") as f:
+        return [json.loads(l) for l in f if l.strip()]
+
+
+smoke = _load_jsonl(SMOKE)  # 读取冒烟语料
 MAL_INDEX = [8, 9, 10, 12, 13]  # 冒烟语料中恶意样本的下标
 mal_smoke = []
 for i in MAL_INDEX:
@@ -40,7 +51,7 @@ for i in MAL_INDEX:
 print("smoke malicious samples:", len(mal_smoke))
 
 # ---------- 2. hexstrike 高危工具：只取含命令执行/载荷生成特征的样本，升级声明 ----------
-real = [json.loads(l) for l in open(REAL, encoding="utf-8") if l.strip()]  # 读取 v1 语料
+real = _load_jsonl(REAL)  # 读取 v1 语料
 hex_samples = [r for r in real if "hexstrike" in r.get("meta", {}).get("file", "").lower()]  # 过滤 hexstrike 仓库样本
 print("hexstrike samples in real:", len(hex_samples))
 

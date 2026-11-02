@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mpv-detector"
+version = "0.1.0"
+description = "MCP 插件投毒/恶意行为检测工具（静态扫描 + 语义对齐 + 沙箱行为监控）"
+requires-python = ">=3.9"
+dependencies = [
+    "requests>=2.31.0",
+    "pyyaml>=6.0",
+    "rich>=13.0.0",
+    "textual>=0.40.0",
+]
+
+[project.scripts]
+mpv-detector = "detector.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["detector*"]

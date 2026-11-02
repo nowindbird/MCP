@@ -1,4 +1,4 @@
-# =====================================================================
+﻿# =====================================================================
 # MCP 投毒检测 · 一键跑完
 # 用法：右键"使用 PowerShell 运行"，或
 #   powershell -ExecutionPolicy Bypass -File "一键跑完.ps1" [-Targets output\targets.txt]
@@ -29,14 +29,24 @@ Write-Host "===== MCP 投毒检测 · 一键跑完 =====" -ForegroundColor Cyan
 Write-Host "目标清单 : $targetsFile"
 Write-Host "输出目录 : $outDirPath"
 
+# 目标清单缺失时自动从静态扫描汇总生成（可疑仓库），无需手工建清单
+if (-not (Test-Path $targetsFile)) {
+    if (Test-Path $scanFile) {
+        Write-Host "目标清单缺失，自动从扫描汇总生成 ..." -ForegroundColor Yellow
+        Push-Location $root
+        try { python -X utf8 -m detector.cli targets --from-scan-summary $scanFile --out $targetsFile } finally { Pop-Location }
+    }
+}
+
 if (-not (Test-Path $targetsFile)) {
     Write-Host "[错误] 找不到目标清单: $targetsFile" -ForegroundColor Red
-    Write-Host "       请先生成清单（每行一个 owner_repo），或用 -Targets 指定路径" -ForegroundColor Yellow
+    Write-Host "       请先生成清单（每行一个 owner_repo），或先跑静态扫描:" -ForegroundColor Yellow
+    Write-Host "       python -m detector.cli run   （生成 output\scan_summary.csv 后可自动生成清单）" -ForegroundColor Yellow
     exit 1
 }
 
 # 按需拼装参数（未传的项交给 config.py 的默认值/环境变量）
-$runArgs = @("-m", "detector.cli", "flow", "--targets", $targetsFile, "--out-dir", $outDirPath)
+$runArgs = @("-X", "utf8", "-m", "detector.cli", "flow", "--targets", $targetsFile, "--out-dir", $outDirPath)
 if ($LocalRoot) { $runArgs += @("--local-root", $LocalRoot) }
 if ($Model) { $runArgs += @("--model", $Model) }
 if (Test-Path $scanFile) { $runArgs += @("--scan-summary", $scanFile) }

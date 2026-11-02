@@ -1,0 +1,300 @@
+# config.yaml.example —— MPV-Detector 本机配置模板
+# 用法：复制本文件为 config.yaml，按本机路径修改。
+# config.yaml 已在 .gitignore 中，不会提交。
+# 路径写相对路径时相对项目根；环境变量 MPV_* 优先级最高。
+# YAML 里只写想覆盖的项，未列出的段用内置默认。
+
+paths:
+  repo_root: dateset
+  medium_repo_meta: mcp插件
+  output_dir: output
+  scan_results: output/scan_results
+  scan_summary: output/scan_summary.csv
+  cache_root: output/cache
+  sandbox_work: output/sandbox_work
+models:
+  base_model: mcp_doc_finetune/models/Qwen2.5-3B-Instruct
+  adapter: mcp_doc_finetune/adapter_mcp_doc_v2
+  adapter_smoke: mcp_doc_finetune/adapter_smoke
+datasets:
+  real: mcp_doc_finetune/dataset_real.jsonl
+  real_v2: mcp_doc_finetune/dataset_real_v2.jsonl
+  smoke: mcp_doc_finetune/dataset_smoke.jsonl
+manifests:
+  scan: output/scan_manifest.csv
+  shard1: output/shard1.csv
+llm:
+  ollama_host: http://localhost:11434
+  default_model: qwen3-coder:30b
+static:
+  SKIP_DIRS:
+  - .git
+  - .hg
+  - .svn
+  - .github
+  - .circleci
+  - .clinerules
+  - node_modules
+  - __pycache__
+  - .venv
+  - venv
+  - env
+  - dist
+  - build
+  - .next
+  - .nuxt
+  - .svelte-kit
+  - .cache
+  - vendor
+  - third_party
+  - libs
+  - assets
+  - fonts
+  - images
+  - img
+  - target
+  - bin
+  - obj
+  - .gradle
+  - .dart_tool
+  - .mvn
+  - .tox
+  - .pytest_cache
+  - .mypy_cache
+  - .ruff_cache
+  - .turbo
+  - .nx
+  - coverage
+  - .yarn
+  - .pnpm-store
+  - testdata
+  - .idea
+  - .vscode
+  DOC_SKIP_DIRS:
+  - tests
+  - test
+  - __tests__
+  - docs
+  - doc
+  - examples
+  - example
+  - scripts
+  SCAN_EXTS:
+  - .py
+  - .pyi
+  - .js
+  - .mjs
+  - .cjs
+  - .ts
+  - .tsx
+  - .jsx
+  - .go
+  - .rs
+  - .sh
+  - .bash
+  - .zsh
+  - .ps1
+  - .rb
+  - .java
+  - .cs
+  - .c
+  - .cpp
+  - .cc
+  - .h
+  - .hpp
+  - .zig
+  - .md
+  - .markdown
+  - .json
+  - .yaml
+  - .yml
+  - .toml
+  - .ini
+  - .cfg
+  - .txt
+  - .html
+  - .htm
+  - .sql
+  - .lua
+  - .php
+  - .swift
+  - .kt
+  - .pl
+  - .r
+  - .gradle
+  - .mustache
+  - .dockerfile
+  - .env
+  - .mcp
+  SPECIAL_FILES:
+  - dockerfile
+  - makefile
+  - cmakelists.txt
+  - requirements.txt
+  - setup.py
+  - setup.cfg
+  - pyproject.toml
+  - package.json
+  - package-lock.json
+  - pnpm-lock.yaml
+  - yarn.lock
+  - poetry.lock
+  - pipfile
+  - gemfile
+  - podfile
+  - .env.example
+  - .env.sample
+  - readme
+  - readme.md
+  - readme.markdown
+  - skill.md
+  - skills.md
+  - agent.md
+  - agents.md
+  CODE_EXTS:
+  - .py
+  - .pyi
+  - .js
+  - .mjs
+  - .cjs
+  - .ts
+  - .tsx
+  - .jsx
+  - .go
+  - .rs
+  - .java
+  - .cs
+  - .php
+  - .rb
+  - .kt
+  - .swift
+  MAX_FILE_SIZE_BYTES: 8388608
+  MAX_LINE_LENGTH: 2000
+  EVAL_DENSITY_THRESHOLD: 5
+  MAX_FILES_PER_REPO: 8
+  MAX_FILE_CHARS: 8000
+  MAX_README_CHARS: 10000
+align:
+  backend: openai
+  api_base: ''
+  api_key: ''
+  model: ''
+  CONFLICT_RATE_THRESHOLD_SUSPICIOUS: 0.3
+  CONFLICT_RATE_THRESHOLD_HIGH: 0.6
+  DANGER_SEC_CONFLICT_RATE: 0.3
+  DANGER_CONFLICT_COUNT: 3
+verdict:
+  CRIT_TIER_HIGH: 10
+  HIGH_TIER_HIGH: 50
+  CRIT_TIER_MED: 1
+  HIGH_TIER_MED: 5
+sandbox:
+  docker_image: mpv-sandbox:latest
+  base_image: ubuntu:22.04
+  memory_limit_mb: 2048
+  cpu_limit: 2.0
+  pids_limit: 256
+  timeout_seconds: 60
+  network_mode: bridge
+  network_name: mpv-sandbox-net
+  capture_dns: true
+  read_only_rootfs: true
+  tmpfs:
+  - /tmp:rw,size=64m,exec
+  cap_drop:
+  - ALL
+  cap_add:
+  - SYS_PTRACE
+  strace_syscalls:
+  - execve
+  - openat
+  - connect
+  - sendto
+  strace_output: /tmp/mpv_strace.log
+  net_output: /tmp/mpv_net.pcap
+  repo_mount: /app
+  open_noise_prefixes:
+  - /usr/
+  - /lib/
+  - /lib64/
+  - /proc/
+  - /sys/
+  - /etc/ld.so
+  - /etc/nsswitch.conf
+  - /etc/localtime
+  - /etc/hosts
+  - /etc/resolv.conf
+  - /etc/gai.conf
+  - /etc/ssl/
+  - /etc/ca-certificates/
+  - /dev/null
+  - /dev/urandom
+  - /dev/random
+  - /dev/tty
+  - /dev/pts
+  - /app/node_modules/
+  - /app/venv/
+  - /app/.venv/
+  - /app/dist/
+  sensitive_path_patterns:
+  - \.ssh/
+  - \.aws/
+  - \.env$
+  - id_rsa
+  - id_ed25519
+  - credential
+  - /etc/passwd
+  - /etc/shadow
+  - \.git-credentials
+  - \.netrc
+  - \.docker/config\.json
+  - honeypot
+  honeypot_files:
+    /tmp/honeypot_ssh_key_never_exist: '-----BEGIN OPENSSH PRIVATE KEY-----
+
+      honeypot_decoy_do_not_use_b3BlbnNzaC1rZXktdjEAAAAABG5vbmU
+
+      -----END OPENSSH PRIVATE KEY-----
+
+      '
+    /tmp/honeypot_credentials.json: '{"aws_access_key_id": "AKIAIOSFODNN7EXAMPLE",
+      "aws_secret_access_key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"}
+
+      '
+  probe:
+    enabled: true
+    initialize_timeout: 10
+    tool_call_timeout: 15
+    max_tools: 12
+  honeypot:
+    api_key: honeypot_fake_key_do_not_use_sk_1234567890abcdef
+    ssh_private_key: /tmp/honeypot_ssh_key_never_exist
+    aws_access_key: AKIAIOSFODNN7EXAMPLE
+    aws_secret_key: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+  auto_trigger_review:
+  - 蜜罐凭据外传
+  - 未声明的网络端点连接
+  - 未声明的命令执行
+  - 未声明的敏感文件读取
+doc_gen:
+  backend: openai
+  api_base: ''
+  api_key: ''
+  model: ''
+  temperature: 0.3
+  max_tokens: 4096
+  timeout: 600
+github:
+  api_url: https://api.github.com
+  codeload_url: https://codeload.github.com
+  api_version: '2022-11-28'
+  user_agent: MPV-Detector/2.0
+  token: ''
+  timeout: 30
+  max_retries: 3
+  retry_delay: 5
+fetch:
+  method: auto
+  workers: 8
+  hard_timeout: 180
+  chunk_size: 65536

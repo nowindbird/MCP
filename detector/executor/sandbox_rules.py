@@ -16,7 +16,7 @@ MPV-Detector 沙箱拦截规则生成器
 
 用法::
 
-  python -m detector.cli sandbox-rules --repo-dir mcp插件/<owner>_<repo>
+  python -m detector.cli sandbox-rules --repo-dir dateset/<owner>_<repo>
   python -m detector.cli sandbox-rules --repo-dir <仓库> --align-json align_result.json
   python -m detector.cli sandbox-rules --repo-dir <仓库> --output rules.json
 """

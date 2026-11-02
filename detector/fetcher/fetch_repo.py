@@ -38,6 +38,7 @@ from detector.deps import (
     CACHE_ROOT,
     FETCH_CONFIG,
     GITHUB_CONFIG,
+    SKIP_DIRS,
     GitHubClient,
     MissingDependency,
     ensure_dir,
@@ -143,11 +144,12 @@ def fetch_tarball(client: GitHubClient, owner: str, repo: str, branch: str,
 # 通道 2：tree + raw（只取可扫描文件，适合超大仓库）
 # ---------------------------------------------------------------------------
 def _is_wanted(path: str) -> bool:
-    """tree 里的路径是否需要下载（跳过噪声目录 + 非扫描文件）。"""
-    lower = path.lower()
-    if any(part in lower.split("/")[:-1] for part in (
-            ".git", "node_modules", "__pycache__", ".venv", "venv", "dist",
-            "build", ".next", ".nuxt", "vendor", "target", "bin", "obj")):
+    """tree 里的路径是否需要下载（跳过噪声目录 + 非扫描文件）。
+
+    目录口径直接复用 deps 的 SKIP_DIRS，与 scanner / docgen 保持一致。
+    """
+    parts = Path(path).parts
+    if any(p.lower() in SKIP_DIRS for p in parts[:-1]):
         return False
     return is_scannable_file(Path(path))
 

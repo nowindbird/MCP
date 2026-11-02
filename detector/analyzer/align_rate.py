@@ -19,7 +19,7 @@ MPV-Detector 语义对齐率检测模块
 
 用法::
 
-    python -m detector.cli align --repo-dir mcp插件/<owner>_<repo>
+    python -m detector.cli align --repo-dir dateset/<owner>_<repo>
     python -m detector.cli align --repo-dir <repo> --doc generated_doc.md --brief
 """
 
@@ -33,6 +33,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from detector.deps import (
     ALIGN_CONFIG,
+    SKIP_DIRS,
     detect_languages as _detect_languages,
     ensure_utf8_stdio,
     iter_repo_files,
@@ -64,6 +65,12 @@ SECURITY_KEYWORDS = {
     "obfuscation": [
         r"(?i)(混淆|解码|解密|base64|decode|eval|exec|marshal|pickle)",
     ],
+}
+
+# 预编译关键词正则（模块加载时一次，避免每条声明重复编译）
+COMPILED_KEYWORDS = {
+    cat: [re.compile(p) for p in pats]
+    for cat, pats in SECURITY_KEYWORDS.items()
 }
 
 
@@ -147,14 +154,14 @@ class AstFactCollector(ast.NodeVisitor):
         self.generic_visit(node)
 
 
-# 各语言事实抽取时跳过的目录（语言专属构建产物；保持与历史口径一致，
-# 以免同一仓库因遍历范围变化而改变对齐率结论）
-PY_SKIP_DIRS = {".git", "node_modules", "__pycache__", "venv", ".venv", "dist", "build"}
-JS_SKIP_DIRS = {".git", "node_modules", "dist", "build", ".next", ".nuxt", "coverage"}
-GO_SKIP_DIRS = {".git", "vendor", "bin", "testdata"}
-RUST_SKIP_DIRS = {".git", "target", "vendor"}
-LANG_SKIP_DIRS = {".git", "node_modules", "venv", ".venv", "dist", "build",
-                  "target", "vendor", ".next", "__pycache__", "bin", "obj"}
+# 各语言事实抽取时跳过的目录：从全局 SKIP_DIRS（config）派生的历史子集。
+# 用「交集」保证口径永远与 config 一致，增删只需改 config 的 SKIP_DIRS。
+PY_SKIP_DIRS = set(SKIP_DIRS) & {".git", "node_modules", "__pycache__", "venv", ".venv", "dist", "build"}
+JS_SKIP_DIRS = set(SKIP_DIRS) & {".git", "node_modules", "dist", "build", ".next", ".nuxt", "coverage"}
+GO_SKIP_DIRS = set(SKIP_DIRS) & {".git", "vendor", "bin", "testdata"}
+RUST_SKIP_DIRS = set(SKIP_DIRS) & {".git", "target", "vendor"}
+LANG_SKIP_DIRS = set(SKIP_DIRS) & {".git", "node_modules", "venv", ".venv", "dist", "build",
+                                    "target", "vendor", ".next", "__pycache__", "bin", "obj"}
 
 
 def extract_python_facts(repo_dir: Path) -> Dict[str, List[str]]:
@@ -320,8 +327,8 @@ def extract_claims(text: str) -> List[Dict]:
             continue
         if _SKIP_LINE_RE.match(line):  # 纯标点/链接/代码块标记
             continue
-        for category, patterns in SECURITY_KEYWORDS.items():
-            if any(re.search(pat, line) for pat in patterns):
+        for category, patterns in COMPILED_KEYWORDS.items():
+            if any(pat.search(line) for pat in patterns):
                 claims.append({"category": category, "claim": line[:300],
                                "evidence": line[:300]})
     return claims

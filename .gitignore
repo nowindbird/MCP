@@ -30,9 +30,14 @@ mcp_doc_finetune/cache/
 # ---- 运行产物（全部可由一键跑完.ps1 / detector 脚本重新生成）----
 output/
 
+# ---- 测试临时目录（detector/tests/util.mktemp 的落点）----
+detector/tests/.tmp/
+
 # ---- 本地采集数据（体积大、可重新下载，绝不入库）----
+/dateset/
 /group三/
 /scan_results/
+/output/
 /group_3_repos.csv
 *.log
 
@@ -49,6 +54,10 @@ __pycache__/
 .env
 .env.*
 !.env.example
+
+# ---- 本机配置（每人路径不同；仓库只提交 example 模板）----
+/config.yaml
+!config.yaml.example
 
 # ---- 系统杂项 ----
 .DS_Store

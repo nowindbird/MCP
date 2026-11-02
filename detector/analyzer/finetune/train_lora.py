@@ -36,6 +36,8 @@ from transformers import (
     TrainingArguments,
 )
 
+from detector.config import MODEL_BASE_DIR, DATASET_REAL_V2, MODEL_ADAPTER_DIR
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger("train_lora")
 
@@ -83,9 +85,12 @@ def tokenize_fn(tokenizer, max_len: int):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--model_dir", required=True, help="基座模型目录（本地 safetensors）")
-    ap.add_argument("--data", required=True, help="训练 JSONL")
-    ap.add_argument("--output_dir", default="adapter_mcp_doc")
+    ap.add_argument("--model_dir", default=str(MODEL_BASE_DIR),
+                    help=f"基座模型目录（本地 safetensors，默认 {MODEL_BASE_DIR}）")
+    ap.add_argument("--data", default=str(DATASET_REAL_V2),
+                    help=f"训练 JSONL（默认 {DATASET_REAL_V2}）")
+    ap.add_argument("--output_dir", default=str(MODEL_ADAPTER_DIR),
+                    help=f"adapter 输出目录（默认 {MODEL_ADAPTER_DIR}）")
     ap.add_argument("--epochs", type=float, default=3.0)
     ap.add_argument("--max_steps", type=int, default=-1, help=">0 时只训练 N 步（用于链路验证）")
     ap.add_argument("--batch_size", type=int, default=1)

@@ -30,6 +30,12 @@ jobs:
       - name: 统一入口可用
         run: python -m detector.cli --list
 
+      - name: 单元测试
+        # 纯本地用例（fileio / repo_walk / scanner / patterns / align /
+        # monitor_parser / sandbox_rules / summary / targets / pipeline / cli / crawler），
+        # 不需要网络、LLM 或 Docker。
+        run: python -m unittest discover -s detector/tests -v
+
       - name: 禁止写死用户名路径
         # 曾经因写死 C:\Users\<用户名>\... 导致换机即挂，此处守住不回退
         run: |

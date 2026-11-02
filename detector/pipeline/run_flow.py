@@ -14,26 +14,26 @@ MPV-Detector 一键跑完编排器
   - 本地 Ollama 已装默认模型（deps.ensure_ollama 会自动尝试拉起 ollama serve）
     地址可用 OLLAMA_HOST 环境变量覆盖
   - 目标仓库本地代码在 --local-root（其下为 <owner_repo> 文件夹）
-    不传该参数时取 config 的 LARGE_REPO_SOURCE（默认项目内 mcp插件/）
+    不传该参数时取 config 的 LARGE_REPO_SOURCE（默认项目内 dateset/）
   - --scan-summary 提供静态扫描命中（CRITICAL/HIGH），用于综合判定
 
-用法（Windows）::
+参数全部有默认值，最小用法（Windows）::
 
-  python -m detector.cli flow ^
-      --targets  output\targets.txt ^
-      --out-dir  output\gen_docs ^
-      --scan-summary output\scan_summary.csv ^
-      --model qwen3-coder:30b
+  python -m detector.cli flow
+  python -m detector.cli flow --scan-summary output\\scan_summary.csv
+  python -m detector.cli flow --targets output\\targets.txt --out-dir output\\gen_docs
 
-参数：
-  --local-root    本地完整仓库根（其下为 <owner_repo> 文件夹）
-  --targets       目标清单文件（每行一个 owner_repo，可含 # 注释）
-  --out-dir       输出目录（doc 与 align json 都写这里）
+  --targets       目标清单文件（默认 output/targets.txt；每行一个 owner_repo，
+                  可含 # 注释；文件不存在且给了 --scan-summary 时自动生成）
+  --out-dir       输出目录（默认 output/gen_docs；doc 与 align json 都写这里）
   --scan-summary  静态扫描汇总 CSV（含 repo,CRITICAL,HIGH,hits），可为空
+  --local-root    本地完整仓库根（默认 config.LARGE_REPO_SOURCE）
   --model         LLM 模型名
   --force         强制重算 align（默认跳过已算）
   --no-docgen     跳过 docgen（只做 align+verdict）
   --no-ollama-check  不检查/不自动拉起 Ollama
+
+目标清单可用 ``python -m detector.cli targets`` 自动生成。
 """
 
 import argparse
@@ -46,8 +46,10 @@ from detector.analyzer.align_rate import compute_alignment
 from detector.deps import (
     CONFIG,
     DOC_GEN_CONFIG,
+    GEN_DOCS_DIR,
     LARGE_REPO_SOURCE,
     PROJECT_ROOT,
+    TARGETS_FILE,
     ensure_ollama,
     ensure_utf8_stdio,
     load_scan_summary,
@@ -105,9 +107,11 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="MPV-Detector 一键跑完编排器")
     ap.add_argument("--local-root", default=str(LARGE_REPO_SOURCE),
                     help="本地完整仓库根（默认 config.LARGE_REPO_SOURCE）")
-    ap.add_argument("--targets", required=True, help="目标清单文件")
-    ap.add_argument("--out-dir", required=True, help="输出目录")
-    ap.add_argument("--scan-summary", default="", help="扫描汇总 CSV")
+    ap.add_argument("--targets", default=str(TARGETS_FILE),
+                    help=f"目标清单文件（默认 {TARGETS_FILE}；不存在且给了 --scan-summary 时自动生成）")
+    ap.add_argument("--out-dir", default=str(GEN_DOCS_DIR),
+                    help=f"输出目录（默认 {GEN_DOCS_DIR}）")
+    ap.add_argument("--scan-summary", default="", help="扫描汇总 CSV（用于综合判定）")
     ap.add_argument("--model", default=DOC_GEN_CONFIG["model"], help="LLM 模型名")
     ap.add_argument("--force", action="store_true", help="强制重算 align")
     ap.add_argument("--no-docgen", action="store_true", help="跳过 docgen")
@@ -120,6 +124,22 @@ def main() -> int:
     out_dir = Path(args.out_dir).resolve()
     targets_file = Path(args.targets).resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
+
+    # ---- 目标清单：缺失时从扫描汇总自动生成（闭环）----
+    if not targets_file.exists():
+        if args.scan_summary and Path(args.scan_summary).exists():
+            from detector.targets import from_scan_summary
+            rows = from_scan_summary(args.scan_summary)
+            names = [r[0] for r in rows]
+            if names:
+                write_text(targets_file, "\n".join(names) + "\n")
+                print(f"[flow] 目标清单缺失，已从扫描汇总自动生成 {len(names)} 个目标:")
+                print(f"       {targets_file}")
+        if not targets_file.exists():
+            print(f"[错误] 目标清单不存在: {targets_file}")
+            print("       生成方式: python -m detector.cli targets --from-scan-summary")
+            print("                （或 --from-dir 枚举本地全部仓库）")
+            return 1
 
     targets = load_targets(targets_file)
     if not targets:

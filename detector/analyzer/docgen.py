@@ -7,9 +7,9 @@ MCP 插件代码 → 语义说明文档 批量生成
 
 两种代码来源：
   1. 本地代码模式（--local-root + --repo-list）：从本地完整仓库目录
-     （默认项目内 mcp插件/<owner>_<repo>，可用 MPV_LARGE_REPO_SOURCE 覆盖）
+     （默认项目内 dateset/<owner>_<repo>，可用 MPV_LARGE_REPO_SOURCE 覆盖）
      直接读取代码与 README，绕开 GitHub 限流，无需 token。
-  2. GitHub 模式（默认）：读取 mcp插件/ 下的插件元数据，通过 GitHub API 拉取关键代码文件。
+  2. GitHub 模式（默认）：读取元数据目录下的 info.json，通过 GitHub API 拉取关键代码文件。
 
 LLM 后端：OpenAI 兼容接口（默认本地 Ollama qwen3-coder:30b），也支持 Claude / GPT。
 GitHub / LLM 客户端、文件遍历与 IO 全部来自 ``detector.deps``（本模块不再自带一套）。
@@ -17,7 +17,7 @@ GitHub / LLM 客户端、文件遍历与 IO 全部来自 ``detector.deps``（本
 用法::
 
     # 本地 Ollama + 本地代码清单模式（推荐，无需 token）
-    python -m detector.cli docgen --local-root mcp插件 --repo-list targets.txt --out-dir output/gen_docs
+    python -m detector.cli docgen --local-root <元数据目录> --repo-list targets.txt --out-dir output/gen_docs
 
     # 本地 Ollama + 插件元数据清单（走 GitHub API）
     python -m detector.cli docgen
@@ -36,8 +36,10 @@ from typing import Any, Dict, List, Optional
 from detector.deps import (
     CODE_EXTS,
     DOC_GEN_CONFIG,
+    DOC_SKIP_DIRS,
     METADATA_DIR,
     OUTPUT_DIR,
+    SKIP_DIRS,
     STATIC_CONFIG,
     GitHubClient,
     LLMClient,
@@ -85,21 +87,22 @@ def _score_path(path: str) -> int:
 
 
 def select_key_files(tree: List[Dict]) -> List[str]:
-    """从 GitHub 文件树中筛选 MCP 相关关键代码文件（按相关性取前 N 个）。"""
+    """从 GitHub 文件树中筛选 MCP 相关关键代码文件（按相关性取前 N 个）。
+
+    跳过目录口径与本地模式一致（``SKIP_DIRS | DOC_SKIP_DIRS``，来自 deps）。
+    """
+    skip_dirs = set(SKIP_DIRS) | set(DOC_SKIP_DIRS)
     candidates = []
     for item in tree:
         if item.get("type") != "blob":  # 只处理文件
             continue
         path = item.get("path", "")
         lower = path.lower()
-        # 跳过测试/依赖/构建产物
-        if any(part in lower for part in ("/test", "/tests", "/__tests__", "/node_modules/",
-                                          "/dist/", "/build/", "/.git", "/vendor/",
-                                          "/target/")):
+        # 跳过测试/依赖/构建产物（与本地模式同一套目录口径）
+        if any(part in skip_dirs for part in lower.split("/")[:-1]):
             continue
-        # 跳过锁文件/清单/文档/压缩文件等非源码
-        if lower.endswith((".min.js", ".min.css", ".map", ".lock", ".toml", ".yaml",
-                           ".yml", ".json", ".md", ".txt", ".cfg", ".ini")):
+        # 跳过压缩/映射/锁文件
+        if lower.endswith((".min.js", ".min.css", ".map", ".lock")):
             continue
         if os.path.splitext(path)[1].lower() not in CODE_EXTS:
             continue
