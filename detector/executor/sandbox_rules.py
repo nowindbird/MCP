@@ -14,10 +14,11 @@ MPV-Detector 沙箱拦截规则生成器
   
   这些规则直接喂给 behavior_monitor.py 做运行时拦截。
 
-用法:
-  python sandbox_rules.py --repo-dir mcp插件\\某仓库
-  python sandbox_rules.py --repo-dir mcp插件\\某仓库 --align-json align_result.json
-  python sandbox_rules.py --repo-dir mcp插件\\某仓库 --output rules.json
+用法::
+
+  python -m detector.cli sandbox-rules --repo-dir mcp插件/<owner>_<repo>
+  python -m detector.cli sandbox-rules --repo-dir <仓库> --align-json align_result.json
+  python -m detector.cli sandbox-rules --repo-dir <仓库> --output rules.json
 """
 
 import argparse
@@ -28,10 +29,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-# 确保能 import config 与 align_rate（config 在 detector/，align_rate 在 analyzer/）
-_HERE = Path(__file__).resolve().parent                       # detector/executor
-sys.path.insert(0, str(_HERE.parent))                         # detector/ → import config
-sys.path.insert(0, str(_HERE.parent / "analyzer"))            # analyzer/ → import align_rate
+from detector.analyzer.align_rate import compute_alignment
+from detector.deps import CONFIG, ensure_utf8_stdio, read_json, write_json
 
 # ---------------------------------------------------------------------------
 # 1. 默认恶意模式黑名单（universal blocklist，所有插件通吃）
@@ -52,20 +51,9 @@ UNIVERSAL_BLOCK_PATTERNS = [
 
 # 蜜罐凭据指纹（与 config.SANDBOX_CONFIG['honeypot'] 单一来源，避免注入与检测漂移）
 def _load_honeypot_indicators() -> List[str]:
-    """从 config 的 honeypot 配置派生检测指纹; 导入失败则回退内置默认值。"""
-    fallback = [
-        "honeypot_fake_key_do_not_use",
-        "/tmp/honeypot_ssh_key_never_exist",
-        "AKIAIOSFODNN7EXAMPLE",
-        "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-    ]
-    try:
-        from config import CONFIG
-        vals = [str(v) for v in CONFIG["sandbox"]["honeypot"].values()
-                if str(v).strip()]
-        return vals or fallback
-    except Exception:
-        return fallback
+    """从 config 的 honeypot 配置派生检测指纹。"""
+    vals = [str(v) for v in CONFIG["sandbox"]["honeypot"].values() if str(v).strip()]
+    return vals or ["honeypot_fake_key_do_not_use", "/tmp/honeypot_ssh_key_never_exist"]
 
 
 HONEYPOT_INDICATORS = _load_honeypot_indicators()
@@ -84,9 +72,8 @@ def generate_rules(repo_dir: Path,
     # ---- 2a. 先跑对齐率（如果没传入） ----
     if align_result is None:
         try:
-            from align_rate import compute_alignment
             align_result = compute_alignment(repo_dir)
-        except Exception as e:
+        except Exception as e:  # 仓库不可读/无源码时仍产出保守规则
             print(f"[警告] 无法运行 align_rate: {e}", file=sys.stderr)
             align_result = {
                 "repo": repo_name,
@@ -117,9 +104,9 @@ def generate_rules(repo_dir: Path,
     verdict_signal = align_result.get("verdict_signal", "UNKNOWN")
 
     violation_actions = {
-        # 矛盾率阈值
-        "conflict_rate_threshold": 0.3,
-        "conflict_rate_high": 0.6,
+        # 矛盾率阈值（与 align_rate 同源，见 config.ALIGN_CONFIG）
+        "conflict_rate_threshold": CONFIG["align"]["CONFLICT_RATE_THRESHOLD_SUSPICIOUS"],
+        "conflict_rate_high": CONFIG["align"]["CONFLICT_RATE_THRESHOLD_HIGH"],
         # 直接 block 的行为类别
         "auto_block_categories": ["credential", "obfuscation"],
         # 送人工审核但不 block
@@ -129,7 +116,8 @@ def generate_rules(repo_dir: Path,
     }
 
     # 如果对齐率模块已经判了 DANGER，规则直接进入"严格模式"
-    if verdict_signal == "DANGER" or security_conflict_rate >= 0.3:
+    if (verdict_signal == "DANGER"
+            or security_conflict_rate >= CONFIG["align"]["DANGER_SEC_CONFLICT_RATE"]):
         violation_actions["conflict_rate_threshold"] = 0.1  # 收紧阈值
         violation_actions["auto_block_categories"].append("network")  # 网络也 block
         allowlist["network_endpoints"] = []  # 清空 allowlist，全部拦截
@@ -240,24 +228,25 @@ def extract_allowlist(facts: Dict[str, List[str]], repo_dir: Path) -> Dict[str, 
 # 3. CLI 入口
 # ---------------------------------------------------------------------------
 
-def main():
+def main() -> int:
+    ensure_utf8_stdio()
     ap = argparse.ArgumentParser(description="MPV-Detector 沙箱规则生成器")
     ap.add_argument("--repo-dir", required=True, help="仓库目录")
-    ap.add_argument("--align-json", default="", help="已有的对齐率结果 JSON (可选，不传则自动计算)")
-    ap.add_argument("--output", default="", help="规则输出 JSON 路径 (可选)")
+    ap.add_argument("--align-json", default="", help="已有的对齐率结果 JSON（不传则自动计算）")
+    ap.add_argument("--output", default="", help="规则输出 JSON 路径")
     ap.add_argument("--brief", action="store_true", help="只输出摘要")
     args = ap.parse_args()
 
     repo_dir = Path(args.repo_dir)
     if not repo_dir.exists():
         print(f"[错误] 仓库目录不存在: {repo_dir}")
-        sys.exit(1)
+        return 1
 
     align_result = None
     if args.align_json:
         rp = Path(args.align_json)
         if rp.exists():
-            align_result = json.loads(rp.read_text(encoding="utf-8"))
+            align_result = read_json(rp)
 
     rules = generate_rules(repo_dir, align_result)
 
@@ -283,10 +272,10 @@ def main():
         print(json.dumps(rules, ensure_ascii=False, indent=2))
 
     if args.output:
-        Path(args.output).write_text(
-            json.dumps(rules, ensure_ascii=False, indent=2), encoding="utf-8")
+        write_json(args.output, rules)
         print(f"\n已写入: {args.output}")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

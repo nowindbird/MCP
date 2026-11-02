@@ -30,6 +30,12 @@ mcp_doc_finetune/cache/
 # ---- 运行产物（全部可由一键跑完.ps1 / detector 脚本重新生成）----
 output/
 
+# ---- 本地采集数据（体积大、可重新下载，绝不入库）----
+/group三/
+/scan_results/
+/group_3_repos.csv
+*.log
+
 # ---- 本地工具目录 ----
 .workbuddy/
 

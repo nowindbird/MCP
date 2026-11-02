@@ -9,59 +9,36 @@ MCP 插件静态安全扫描器 (基于论文 "Do Not Mention This to the User" 
 命中仅代表"候选", 需结合语义审查判定意图 (verdict: benign/suspicious/malicious)。
 
 用法:
-  python mcp_plugin_scanner.py --repo-dir <dir> --repo <full_name> --out <out.json>
+  python -m detector.scanner.scanner --repo-dir <dir> --repo <full_name> --out <out.json>
        [--language X] [--size-kb N] [--stars N] [--fetch-method M]
-  python mcp_plugin_scanner.py --manifest <shard.csv> --cache-root <root> --out-dir <dir>
+  python -m detector.scanner.scanner --manifest <shard.csv> --out-dir <dir>
 
 严重性沿用论文: CRITICAL(E2/PE3/SC2/SC3) > HIGH(E1/P1/P2/P3/SC1) > MEDIUM(E3/E4/P4/PE2) > LOW(PE1)
 只做静态读取, 绝不执行被检代码。
+
+文件过滤口径（跳过目录 / 扩展名 / 特殊文件 / 单文件上限）统一来自 ``detector.deps``，
+与 fetcher / docgen 等模块共用同一套定义，避免各处口径漂移。
 """
 
-import argparse      # 命令行参数解析
-import csv           # CSV 批量清单读取
-import json          # JSON 结果序列化
-import os            # 目录遍历
-import re            # 正则匹配
-import sys           # 系统退出码
+import argparse  # 命令行参数解析
+import csv       # CSV 批量清单读取
+import json      # JSON 结果序列化 / MCP 配置解析
+import re        # 正则匹配
 from pathlib import Path  # 跨平台路径处理
 
-# ---------------- 文件过滤 ----------------
-# 扫描时需要跳过的目录（避免依赖/构建产物/文档带来海量噪音命中）
-SKIP_DIRS = {
-    ".git", "node_modules", "__pycache__", ".venv", "venv", "env", "dist", "build",
-    ".next", ".nuxt", ".cache", "vendor", ".tox", ".pytest_cache", ".mypy_cache",
-    ".ruff_cache", ".idea", ".vscode", "target", "bin", "obj", ".turbo", ".nx",
-    "coverage", ".yarn", ".pnpm-store", ".svelte-kit", ".dart_tool", ".gradle",
-    ".hg", ".svn", ".mvn", "third_party", "ThirdParty", "libs", "assets", "fonts",
-    "testdata", ".github", ".circleci", ".clinerules", "docs", "images", "img",
-}
-# docs/images 等目录里也可能藏 README 或 .md 的 P1/P2 指令, 但为避免噪音, 默认跳过纯文档目录;
-# 保留 README* 的扫描: 通过下面的 SKIP_DIRS_WITH_README 处理
-# 说明: SKIP_DIRS_ALL 去掉了 "docs"，使 docs 目录本身参与扫描（README 等可能在 docs 下）
-SKIP_DIRS_ALL = SKIP_DIRS - {"docs"}  # docs 本身参与扫描, 但不再深挖子目录噪音由扩展名控制
+from detector.deps import (
+    EVAL_DENSITY_THRESHOLD,
+    MAX_FILE_SIZE_BYTES,
+    MAX_LINE_LENGTH,
+    SCAN_OUTPUT_DIR,
+    ensure_dir,
+    iter_repo_files,
+    read_text,
+    write_json,
+)
 
-# 参与扫描的文件扩展名（覆盖主流代码/脚本/配置/文档）
-SCAN_EXTS = {
-    ".py", ".pyi", ".js", ".mjs", ".cjs", ".ts", ".tsx", ".jsx", ".go", ".rs",
-    ".sh", ".bash", ".zsh", ".ps1", ".rb", ".java", ".cs", ".c", ".cpp", ".cc",
-    ".h", ".hpp", ".zig", ".md", ".markdown", ".json", ".yaml", ".yml", ".toml",
-    ".ini", ".cfg", ".txt", ".html", ".htm", ".sql", ".lua", ".php", ".swift",
-    ".kt", ".dockerfile", ".pl", ".r", ".env", ".mcp", ".gradle", ".mustache",
-}
-# 无标准扩展名但需要扫描的特殊文件名
-SPECIAL_FILES = {
-    "dockerfile", "makefile", "cmakelists.txt", "requirements.txt", "setup.py",
-    "setup.cfg", "pyproject.toml", "package.json", "package-lock.json",
-    "pnpm-lock.yaml", "yarn.lock", "poetry.lock", "pipfile", "gemfile", "podfile",
-    ".env.example", ".env.sample", "readme", "readme.md", "readme.markdown",
-    "skill.md", "skills.md", "agent.md", "agents.md",
-}
 BINARY_BYTES = b"\x00"  # 二进制文件检测用字节
 
-# ---------------- 攻击模式 (论文 Table 9 的 14 模式 + MCP 补充) ----------------
-# 每条: (id, label, severity, regex, flags)
-# severity: CRITICAL/HIGH/MEDIUM/LOW
-# flags: None 表示不附加 re 标志; re.I 忽略大小写; re.M 多行模式; re.S 使 . 匹配换行
 PATTERNS = [
     # ---------- E1 外传: 检测代码向非本机端点发送数据的网络请求 ----------
     # 匹配 Python 常见 HTTP 客户端的 post/put/patch/get 调用，排除 localhost/127.0.0.1/0.0.0.0
@@ -347,64 +324,75 @@ PATTERNS = [
 CONFIG_EXTS = {".json", ".yaml", ".yml", ".toml", ".ini", ".cfg", ".env"}
 
 
-def severity_for(pat, path):
-    """按文件类型对部分模式做严重性微调(M3 在配置文件中更可疑)。"""
-    sev = pat[2]  # 模式默认严重性
-    # M3: 若命中文件是配置文件（含密钥配置赋值更可疑）→ CRITICAL
-    if pat[0] == "M3" and Path(path).suffix.lower() in CONFIG_EXTS:
-        return "CRITICAL"
-    # M3: 普通代码文件中的硬编码凭据 → MEDIUM（需语义判定是否为测试夹具）
-    if pat[0] == "M3":
-        return "MEDIUM"
-    return sev  # 其余模式返回默认严重性
+# ---------------------------------------------------------------------------
+# 扫描执行
+# ---------------------------------------------------------------------------
+def severity_for(pat, path: Path) -> str:
+    """按文件类型对部分模式做严重性微调（M3 在配置文件中更可疑）。"""
+    pid, _label, sev = pat[0], pat[1], pat[2]
+    if pid == "M3":
+        # 配置文件中的硬编码凭据 → CRITICAL；普通代码中可能是测试夹具 → MEDIUM
+        return "CRITICAL" if path.suffix.lower() in CONFIG_EXTS else "MEDIUM"
+    return sev
+
+
+# 需要额外做结构化 JSON 解析的 MCP 客户端配置文件（正则扫描之外）
+MCP_CONFIG_FILENAMES = {
+    ".mcp.json",
+    "claude_desktop_config.json",
+    "mcp.json",
+    "mcpServers.json",
+    "mcp_config.json",
+}
+
+# command/args 中出现的可疑可执行/载荷片段
+SUSPICIOUS_CMD_KEYWORDS = (
+    "curl", "wget", "python -c", "python -m http", "node -e",
+    "bash -c", "sh -c", "powershell", "Invoke-",
+    "/tmp/", "/dev/shm/", "base64", "--decode",
+    "rm -rf", "chmod 777", "nohup",
+)
 
 
 def scan_mcp_config(path: Path) -> list:
-    """JSON 解析 MCP 客户端配置文件 (.mcp.json / claude_desktop_config.json / mcpServers 等),
-    检查 command/env/args 是否存在投毒迹象。
-    返回命中列表(可直接并入 scanner 的 hits 格式)。
+    """结构化解析 MCP 客户端配置（.mcp.json / claude_desktop_config.json 等），
+    检查 mcpServers 的 command/args/env 是否存在投毒迹象。
+
+    返回命中列表（与正则命中同格式，可直接并入 hits）。
     """
     try:
-        data = json.loads(path.read_text(encoding="utf-8-sig"))
-    except Exception:
+        data = json.loads(read_text(path) or "")
+    except (TypeError, ValueError):
+        return []
+
+    servers = data.get("mcpServers", data) if isinstance(data, dict) else {}
+    if not isinstance(servers, dict):
         return []
 
     hits = []
-    servers = data.get("mcpServers", data) if isinstance(data, dict) else {}
-    if not isinstance(servers, dict):
-        return hits
-
-    SUSPICIOUS_CMD_KEYWORDS = (
-        "curl", "wget", "python -c", "python -m http", "node -e",
-        "bash -c", "sh -c", "powershell", "Invoke-",
-        "/tmp/", "/dev/shm/", "base64", "--decode",
-        "rm -rf", "chmod 777", "nohup",
-    )
-
     for name, conf in servers.items():
         if not isinstance(conf, dict):
             continue
         cmd = str(conf.get("command", "")).lower()
-        args_list = conf.get("args", [])
-        args = " ".join(str(a) for a in args_list) if isinstance(args_list, list) else str(args_list)
+        raw_args = conf.get("args", [])
+        args = (" ".join(str(a) for a in raw_args)
+                if isinstance(raw_args, list) else str(raw_args))
         env = conf.get("env") or {}
 
-        # ---- command/args 指向可疑可执行 ----
-        for bad in SUSPICIOUS_CMD_KEYWORDS:
-            if bad in cmd or bad in args.lower():
-                hits.append({
-                    "pattern_id": "M7",
-                    "label": "MCP配置投毒:mcpServers command/args 可疑",
-                    "severity": "CRITICAL",
-                    "file": str(path),
-                    "line": 0,
-                    "evidence": f"mcpServers[{name}].command={conf.get('command')} args={args[:200]}",
-                })
-                break  # 同一 server 只记一条
+        # ---- command/args 指向可疑可执行（同一 server 只记一条）----
+        if any(bad in cmd or bad in args.lower() for bad in SUSPICIOUS_CMD_KEYWORDS):
+            hits.append({
+                "pattern_id": "M7",
+                "label": "MCP配置投毒:mcpServers command/args 可疑",
+                "severity": "CRITICAL",
+                "file": str(path),
+                "line": 0,
+                "evidence": f"mcpServers[{name}].command={conf.get('command')} args={args[:200]}",
+            })
 
-        # ---- env 注入凭据类变量 ----
+        # ---- env 注入凭据类变量（同一 server 只记一条）----
         if isinstance(env, dict):
-            for k, v in env.items():
+            for k in env:
                 if re.search(r"(?i)(api[_-]?key|secret|token|password|credential)", str(k)):
                     hits.append({
                         "pattern_id": "M7",
@@ -414,126 +402,93 @@ def scan_mcp_config(path: Path) -> list:
                         "line": 0,
                         "evidence": f"mcpServers[{name}].env.{k}=***",
                     })
-                    break  # 同一 server 只记一条凭据注入
+                    break
 
     return hits
 
 
-# 需要额外调用 scan_mcp_config 的配置文件名（正则扫描之外的结构化解析）
-MCP_CONFIG_FILENAMES = {
-    ".mcp.json",
-    "claude_desktop_config.json",
-    "mcp.json",
-    "mcpServers.json",
-    "mcp_config.json",
-}
-
-
-def is_scannable(path: Path) -> bool:
-    """判断文件是否应参与扫描。
-
-    - 文件名以 readme 开头，或是 SPECIAL_FILES 中的特殊文件 → 扫描
-    - 否则看扩展名是否在 SCAN_EXTS 中
-    """
-    name = path.name.lower()
-    if name.startswith("readme") or name in {f.lower() for f in SPECIAL_FILES}:
-        return True
-    return path.suffix.lower() in SCAN_EXTS
-
-
-def should_skip_dir(name: str) -> bool:
-    """判断目录是否应被跳过（忽略大小写）。"""
-    return name.lower() in SKIP_DIRS_ALL
-
-
-def scan_file(path: Path):
-    """扫描单个文件, 返回 hits 列表。
+def scan_file(path: Path) -> list:
+    """扫描单个文件，返回 hits 列表。
 
     流程：读字节 → 过滤超大/二进制/伪装文本 → 解码 → 特殊处理 P2 多行注释与
     不可见 Unicode → 逐行匹配其余 PATTERNS → eval 高密度检测 → 去重。
     """
     try:
-        raw = path.read_bytes()  # 读取文件原始字节
+        raw = path.read_bytes()
     except (OSError, PermissionError):
-        return []  # 无法读取（权限/占用）→ 无命中
-    if len(raw) > 8 * 1024 * 1024:  # 跳过超大文件(如巨型 json)
         return []
-    if BINARY_BYTES in raw[:8192]:  # 前 8KB 含空字节 → 判定为二进制
+    if len(raw) > MAX_FILE_SIZE_BYTES:
         return []
-    try:
-        # utf-8-sig 剥离 BOM, 避免 BOM 被误判为不可见 Unicode
-        text = raw.decode("utf-8-sig", errors="replace")
-    except Exception:
-        return []
-    # 二进制伪装检测：大量替换符（U+FFFD）说明不是真正文本
-    if "\ufffd" in text[:4096] and len([c for c in text[:4096] if c == "\ufffd"]) > 50:
+    if BINARY_BYTES in raw[:8192]:  # 前 8KB 含空字节 → 二进制
         return []
 
-    lines = text.splitlines()  # 按行切分
-    hits = []  # 命中结果列表
-    rel = str(path)  # 相对路径（用于记录 file 字段）
+    text = raw.decode("utf-8-sig", errors="replace")  # utf-8-sig 顺带剥 BOM
+    # 二进制伪装检测：大量替换符说明不是真正文本
+    head = text[:4096]
+    if head.count("\ufffd") > 50:
+        return []
+
+    lines = text.splitlines()
+    hits = []
 
     # ---- P2 特殊处理：HTML 注释(多行)、Markdown 隐藏注释、不可见 Unicode ----
-    html_hits = []
-    # 匹配所有 HTML 注释 <!-- ... -->
+    p2_hits = []
     for m in re.finditer(r"<!--(.*?)-->", text, re.S):
         inner = m.group(1)
-        # 仅当注释内部包含指令性关键词时才记作命中（避免海量普通注释噪音）
-        if re.search(r"(?i)(ignore|never|always|must|do not|don't|execute|run|instruction|secret|hidden|tell|mention|forget)|忽略|不要|必须|隐藏|执行|指令|之前", inner):
-            line_no = text.count("\n", 0, m.start()) + 1  # 计算行号
-            snippet = inner.strip().replace("\n", " ")[:220]  # 取前 220 字符做证据
-            html_hits.append(("P2", "隐藏指令:HTML注释内指令", "HIGH", line_no, snippet))
-    # 匹配 Markdown 隐藏注释 [//]:#(...)
+        # 仅当注释内含指令性关键词才记（避免普通注释噪音）
+        if re.search(r"(?i)(ignore|never|always|must|do not|don't|execute|run|instruction"
+                     r"|secret|hidden|tell|mention|forget)|忽略|不要|必须|隐藏|执行|指令|之前",
+                     inner):
+            line_no = text.count("\n", 0, m.start()) + 1
+            p2_hits.append(("P2", "隐藏指令:HTML注释内指令", "HIGH", line_no,
+                            inner.strip().replace("\n", " ")[:220]))
     for m in re.finditer(r"\[\s*//\s*\]\s*:\s*#\s*\(([^)]*)\)", text):
         line_no = text.count("\n", 0, m.start()) + 1
-        html_hits.append(("P2", "隐藏指令:Markdown隐藏注释", "HIGH", line_no, m.group(1)[:220]))
-    # 匹配不可见 Unicode 字符（每个文件只记一次，避免爆炸）
-    for m in re.finditer(r"[\u200b\u200c\u200d\u2060\ufeff]", text):
-        line_no = text.count("\n", 0, m.start()) + 1
-        html_hits.append(("P2", "隐藏指令:不可见Unicode字符", "HIGH", line_no,
-                          repr(text[m.start() - 30:m.start() + 30])))
-        break  # 每文件记一次即可
-    # 将 P2 特殊命中并入 hits
-    for pid, label, sev, ln, ev in html_hits:
+        p2_hits.append(("P2", "隐藏指令:Markdown隐藏注释", "HIGH", line_no,
+                        m.group(1)[:220]))
+    hidden = re.search(r"[\u200b\u200c\u200d\u2060\ufeff]", text)
+    if hidden:  # 每文件只记一次，避免爆炸
+        line_no = text.count("\n", 0, hidden.start()) + 1
+        p2_hits.append(("P2", "隐藏指令:不可见Unicode字符", "HIGH", line_no,
+                        repr(text[max(0, hidden.start() - 30):hidden.start() + 30])))
+    for pid, label, sev, ln, ev in p2_hits:
         hits.append({"pattern_id": pid, "label": label, "severity": sev,
-                     "file": rel, "line": ln, "evidence": ev})
+                     "file": str(path), "line": ln, "evidence": ev})
 
     # ---- 逐行匹配其余模式 ----
     for idx, line in enumerate(lines, start=1):
-        if len(line) > 2000:  # 超长行截断，避免正则回溯过慢
-            line = line[:2000]
-        for pid, label, sev, regex, flags in PATTERNS:
-            if pid == "P2":  # P2 已在上面处理，跳过
+        if len(line) > MAX_LINE_LENGTH:  # 超长行截断，避免正则回溯过慢
+            line = line[:MAX_LINE_LENGTH]
+        for pat in PATTERNS:
+            if pat[0] == "P2":  # P2 已在上面处理
                 continue
+            pid, label, sev, regex, flags = pat
             try:
-                if flags is not None:
-                    m = re.search(regex, line, flags)  # 带标志匹配
-                else:
-                    m = re.search(regex, line)  # 无标志匹配
+                m = re.search(regex, line, flags) if flags is not None else re.search(regex, line)
             except re.error:  # 正则本身异常则跳过该模式
                 continue
             if m:
-                sev = severity_for((pid, label, sev, regex, flags), path)  # 动态严重性
                 hits.append({
-                    "pattern_id": pid, "label": label, "severity": sev,
-                    "file": rel, "line": idx,
-                    "evidence": line.strip()[:260],  # 命中行作为证据
+                    "pattern_id": pid, "label": label,
+                    "severity": severity_for(pat, path),
+                    "file": str(path), "line": idx,
+                    "evidence": line.strip()[:260],
                 })
-                # 不 break: 同一行可能同时命中多个不同模式(如 subprocess+curl|sh), 全量记录后统一去重
+                # 不 break：同一行可能同时命中多个模式（如 subprocess + curl|sh）
 
-    # ---- eval 高密度检测（SC3 补充） ----
-    eval_count = len(re.findall(r"\beval\s*\(", text))  # 统计文件中 eval( 出现次数
-    if eval_count >= 5:  # ≥5 次视为高混淆密度候选
+    # ---- eval 高密度检测（SC3 补充）----
+    eval_count = len(re.findall(r"\beval\s*\(", text))
+    if eval_count >= EVAL_DENSITY_THRESHOLD:
         first = next((i for i, l in enumerate(lines, 1) if re.search(r"\beval\s*\(", l)), 1)
         hits.append({"pattern_id": "SC3", "label": "混淆:eval高密度使用",
-                     "severity": "MEDIUM", "file": rel, "line": first,
-                     "evidence": "eval() 出现 %d 次 (>=5), 高混淆密度候选" % eval_count})
+                     "severity": "MEDIUM", "file": str(path), "line": first,
+                     "evidence": f"eval() 出现 {eval_count} 次 (>={EVAL_DENSITY_THRESHOLD}), "
+                                 f"高混淆密度候选"})
 
     # ---- 去重: 同文件同行同 pattern 只留一条 ----
-    seen = set()
-    uniq = []
+    seen, uniq = set(), []
     for h in hits:
-        key = (h["pattern_id"], h["file"], h["line"])  # 唯一键：模式+文件+行
+        key = (h["pattern_id"], h["file"], h["line"])
         if key in seen:
             continue
         seen.add(key)
@@ -542,116 +497,116 @@ def scan_file(path: Path):
 
 
 def scan_repo(repo_dir: Path):
-    """遍历仓库目录, 返回 (files_scanned, hits)。
+    """遍历仓库目录，返回 (files_scanned, hits)。
 
-    os.walk 逐目录遍历，跳过 should_skip_dir 判定的目录，
-    仅对 is_scannable 的文件调用 scan_file；对 MCP 配置文件额外调 scan_mcp_config。
+    目录/扩展名过滤由 ``deps.iter_repo_files`` 统一处理；MCP 客户端配置文件
+    额外做结构化 JSON 解析（M7 增强）。
     """
-    files_scanned = 0  # 已扫描文件计数
-    all_hits = []  # 汇总命中
-    if not repo_dir.exists():  # 目录不存在 → 无可扫描
-        return 0, []
-    for root, dirs, files in os.walk(str(repo_dir)):
-        # 原地过滤需要跳过的子目录（影响后续递归）
-        dirs[:] = [d for d in dirs if not should_skip_dir(d)]
-        for f in files:
-            p = Path(root) / f
-            if not is_scannable(p):  # 扩展名/文件名不在扫描范围则跳过
-                continue
-            files_scanned += 1
+    files_scanned = 0
+    all_hits = []
+    for p in iter_repo_files(repo_dir):
+        files_scanned += 1
+        try:
+            all_hits.extend(scan_file(p))
+        except Exception:  # 单文件异常不影响整体扫描
+            continue
+        if p.name.lower() in MCP_CONFIG_FILENAMES:
             try:
-                all_hits.extend(scan_file(p))  # 扫描并追加命中
+                all_hits.extend(scan_mcp_config(p))
             except Exception:
-                continue  # 单文件异常不影响整体
-            # MCP 客户端配置文件: 额外做结构化 JSON 解析 (M7 检测增强)
-            if f.lower() in MCP_CONFIG_FILENAMES:
-                try:
-                    all_hits.extend(scan_mcp_config(p))
-                except Exception:
-                    continue
+                continue
     return files_scanned, all_hits
 
 
+# ---------------------------------------------------------------------------
+# CLI
+# ---------------------------------------------------------------------------
+def _new_result(repo: str, row: dict, fetch_ok: bool, files_scanned: int,
+                hits: list) -> dict:
+    """构造单仓库扫描结果（字段口径与 summary / aggregate 一致）。
+
+    清单列名兼容 shard 清单（``fetch_method``）与 fetch 产物（``method``）。
+    """
+    return {
+        "repo": repo,
+        "language": row.get("language", "") or "",
+        "size_kb": int(row.get("size_kb") or 0),
+        "stars": int(row.get("stars") or 0),
+        "fetch_method": row.get("fetch_method") or row.get("method") or "",
+        "fetch_ok": fetch_ok,
+        "files_scanned": files_scanned,
+        "hits": hits,
+        "verdict": "pending" if fetch_ok else "not_scanned",
+        "confidence": 0,
+        "reason": "" if fetch_ok else "代码获取失败/目录为空",
+        "shadow_features": [],
+    }
+
+
 def main():
-    # 命令行参数定义
     ap = argparse.ArgumentParser(description="MCP 插件静态扫描器")
-    # 单仓库模式参数
+    # 单仓库模式
     ap.add_argument("--repo-dir", help="单个仓库代码目录")
-    ap.add_argument("--repo", help="仓库 full_name")
-    ap.add_argument("--out", help="输出 JSON 路径")
+    ap.add_argument("--repo", default="", help="仓库 full_name")
+    ap.add_argument("--out", default="", help="输出 JSON 路径")
     ap.add_argument("--language", default="")
     ap.add_argument("--size-kb", type=int, default=0)
     ap.add_argument("--stars", type=int, default=0)
     ap.add_argument("--fetch-method", default="")
-    # 批量模式参数
+    # 批量模式
     ap.add_argument("--manifest", help="批量模式: shard CSV")
-    ap.add_argument("--cache-root", help="批量模式: 缓存根目录")
-    ap.add_argument("--out-dir", help="批量模式: 输出目录")
+    ap.add_argument("--out-dir", default="", help=f"批量模式: 输出目录（默认 {SCAN_OUTPUT_DIR}）")
     args = ap.parse_args()
 
-    if args.manifest:  # ---------- 批量模式（--manifest） ----------
-        out_dir = Path(args.out_dir)
-        out_dir.mkdir(parents=True, exist_ok=True)  # 确保输出目录存在
-        results = []
-        # 读取 shard CSV
+    if args.manifest:  # ---------- 批量模式 ----------
+        out_dir = ensure_dir(Path(args.out_dir) if args.out_dir else SCAN_OUTPUT_DIR)
         with open(args.manifest, "r", encoding="utf-8-sig") as fh:
             rows = list(csv.DictReader(fh))
+
+        results = []
         for r in rows:
-            full = r["full_name"]  # 仓库 full_name
-            cache = Path(r["cache_dir"])  # 该仓库的缓存目录
-            # 缓存不存在或为空 → 无法扫描，标记 not_scanned
+            full = r["full_name"]
+            cache = Path(r["cache_dir"])
+            # 缓存不存在或为空 → 无法扫描
             if not cache.exists() or not any(cache.iterdir()):
-                res = {
-                    "repo": full, "language": r["language"], "size_kb": int(r["size_kb"]),
-                    "stars": int(r["stars"]), "fetch_method": r["fetch_method"],
-                    "fetch_ok": False, "files_scanned": 0, "hits": [],
-                    "verdict": "not_scanned", "confidence": 0, "reason": "代码获取失败/目录为空",
-                    "shadow_features": [],
-                }
-                results.append(res)
-                # 写单仓库 JSON（owner/repo → owner__repo.json）
-                out = out_dir / (full.replace("/", "__") + ".json")
-                out.write_text(json.dumps(res, ensure_ascii=False, indent=2), encoding="utf-8")
-                continue
-            # 正常扫描该仓库
-            files_scanned, hits = scan_repo(cache)
-            res = {
-                "repo": full, "language": r["language"], "size_kb": int(r["size_kb"]),
-                "stars": int(r["stars"]), "fetch_method": r["fetch_method"],
-                "fetch_ok": True, "files_scanned": files_scanned, "hits": hits,
-                "verdict": "pending", "confidence": 0, "reason": "",
-                "shadow_features": [],
-            }
+                res = _new_result(full, r, False, 0, [])
+            else:
+                files_scanned, hits = scan_repo(cache)
+                res = _new_result(full, r, True, files_scanned, hits)
             results.append(res)
-            out = out_dir / (full.replace("/", "__") + ".json")
-            out.write_text(json.dumps(res, ensure_ascii=False, indent=2), encoding="utf-8")
-            # 打印该仓库命中统计（按严重性汇总）
+            write_json(out_dir / (full.replace("/", "__") + ".json"), res)
             sev = {}
-            for h in hits:
+            for h in res["hits"]:
                 sev[h["severity"]] = sev.get(h["severity"], 0) + 1
-            print("[%s] files=%d hits=%d %s" % (full, files_scanned, len(hits),
-                                                json.dumps(sev, ensure_ascii=False)))
-        # 写本分片汇总 JSON
-        summary = out_dir / ("_shard_summary_" + Path(args.manifest).stem + ".json")
-        summary.write_text(json.dumps(results, ensure_ascii=False, indent=2), encoding="utf-8")
-        print("batch done: %d repos -> %s" % (len(results), out_dir))
-        return
+            print("[%s] files=%d hits=%d %s"
+                  % (full, res["files_scanned"], len(res["hits"]), sev))
+
+        write_json(out_dir / f"_shard_summary_{Path(args.manifest).stem}.json", results)
+        print(f"batch done: {len(results)} repos -> {out_dir}")
+        return 0
 
     # ---------- 单仓库模式 ----------
-    repo_dir = Path(args.repo_dir)
+    repo_dir = Path(args.repo_dir or "")
     files_scanned, hits = scan_repo(repo_dir)
     res = {
-        "repo": args.repo, "language": args.language, "size_kb": args.size_kb,
-        "stars": args.stars, "fetch_method": args.fetch_method,
+        "repo": args.repo,
+        "language": args.language,
+        "size_kb": args.size_kb,
+        "stars": args.stars,
+        "fetch_method": args.fetch_method,
         "fetch_ok": repo_dir.exists() and any(repo_dir.iterdir()),
-        "files_scanned": files_scanned, "hits": hits,
-        "verdict": "pending", "confidence": 0, "reason": "", "shadow_features": [],
+        "files_scanned": files_scanned,
+        "hits": hits,
+        "verdict": "pending",
+        "confidence": 0,
+        "reason": "",
+        "shadow_features": [],
     }
-    if args.out:  # 指定输出文件则写入
-        Path(args.out).parent.mkdir(parents=True, exist_ok=True)
-        Path(args.out).write_text(json.dumps(res, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(json.dumps(res, ensure_ascii=False, indent=2))  # 打印结果
+    if args.out:
+        write_json(args.out, res)
+    print(json.dumps(res, ensure_ascii=False, indent=2))
+    return 0
 
 
 if __name__ == "__main__":
-    main()  # 程序入口
+    raise SystemExit(main())

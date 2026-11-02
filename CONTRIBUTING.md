@@ -28,6 +28,7 @@ pip install -r requirements.txt
 
 # 4. 改动后自检
 python detector/config.py          # 打印配置，确认路径解析正常
+python -m detector.deps --check    # 依赖接口自检（路径 / 子包导入 / 可选依赖）
 python -m compileall detector      # 语法检查
 
 # 5. 提交（遵循 Conventional Commits）
@@ -46,7 +47,23 @@ git push origin feat/新的检测规则
 
 ## 代码规范
 
-### 1. 禁止硬编码绝对路径 ⚠️
+### 1. 依赖只走一个文件 ⚠️
+
+所有跨模块依赖统一从 **`detector/deps.py`** 取：
+
+```python
+from detector.deps import CONFIG, write_json, GitHubClient, iter_repo_files
+```
+
+- 禁止 `sys.path.insert`
+- 禁止 `from config import ...` / `from align_rate import ...` 这类平铺导入
+- 禁止自己拼 `output/...`、`mcp插件/...` 路径（用 `deps` 的常量）
+- 禁止重复定义扫描跳过目录 / 扩展名 / 文件大小上限（用 `deps` 的口径）
+- 需要新第三方库 → 只在 `deps.py` 里按需导入（`require_xxx()`）
+
+CI 会检查前两条，回退即失败。
+
+### 2. 禁止硬编码绝对路径 ⚠️
 
 这是本项目的**首要规范**。曾经因为写死 `D:\mcp插件` 和
 `C:\Users\<用户名>\AppData\...\ollama.exe`，导致换一台机器就跑不起来。
@@ -63,7 +80,7 @@ python detector/config.py                              # 默认路径解析是�
 MPV_LARGE_REPO_SOURCE=/tmp/x python detector/config.py  # 环境变量是否生效
 ```
 
-### 2. 不要提交大文件
+### 3. 不要提交大文件
 
 GitHub 单文件上限 100MB。以下**一律不入库**（已在 `.gitignore`）：
 
@@ -113,9 +130,11 @@ git config lfs.https://github.com/<你的用户名>/MCP.git/info/lfs.locksverify
 
 提交前请确认：
 
+- [ ] 依赖从 `detector.deps` 取用（没有新增 `sys.path.insert` / 平铺导入 / 重复路径常量）
 - [ ] 没有引入硬编码绝对路径
-- [ ] 没有提交大文件或 `output/` 产物
+- [ ] 没有提交大文件、`output/` 产物或本地采集数据
 - [ ] `python -m compileall detector` 通过
 - [ ] `python detector/config.py` 能正常输出
+- [ ] `python -m detector.deps --check` 自检通过
 - [ ] 新增的环境变量/子命令已同步到 `README.md`
 - [ ] 提交信息符合 Conventional Commits

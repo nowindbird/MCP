@@ -1,71 +1,44 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-GitHub MCP 工具插件抓取脚本
-============================
+GitHub MCP 工具插件抓取
+========================
 用于从 GitHub 搜索并抓取 MCP（Model Context Protocol）相关的工具/插件仓库，
 支持多关键词搜索、分页、详情抓取、README 提取，结果输出为 JSON / CSV。
 
-使用方式：
-    # 基础使用（匿名，速率限制 10 次/分钟）
-    python github_mcp_crawler.py
+使用方式（统一入口）::
 
-    # 使用 GitHub Token（速率限制 30 次/分钟，推荐）
-    python github_mcp_crawler.py --token ghp_xxxxxxxxxxxx
+    python -m detector.cli crawl                                  # 默认关键词
+    python -m detector.cli crawl --fetch-readme                   # 附带 README
+    python -m detector.cli crawl --min-stars 100 --language Python
+    python -m detector.cli crawl --keywords "mcp server" "mcp tool" --max-results 200
+    python -m detector.cli crawl --output output                  # 输出目录
+    GITHUB_TOKEN=ghp_xxx python -m detector.cli crawl             # 提高速率限制
 
-    # 指定关键词和最大结果数
-    python github_mcp_crawler.py --keywords "mcp server" "model context protocol" --max-results 200
-
-    # 抓取 README 内容（用于安全分析/投毒检测）
-    python github_mcp_crawler.py --fetch-readme
-
-    # 指定输出目录
-    python github_mcp_crawler.py --output ./data
-
-筛选条件（可组合使用）：
-    # 只抓 star >= 100 的仓库
-    python github_mcp_crawler.py --min-stars 100
-
-    # 只抓 2024 年之后创建的仓库
-    python github_mcp_crawler.py --created-after 2024-01-01
-
-    # 只抓最近 3 个月有更新的仓库
-    python github_mcp_crawler.py --pushed-after 2025-06-01
-
-    # 只抓 Python 语言、MIT 协议的仓库
-    python github_mcp_crawler.py --language Python --license mit
-
-    # 排除已归档/已禁用的仓库
-    python github_mcp_crawler.py --exclude-archived --exclude-disabled
-
-    # 组合筛选：star 50~500，TypeScript，2024年后创建，排除归档
-    python github_mcp_crawler.py --min-stars 50 --max-stars 500 \
-        --language TypeScript --created-after 2024-01-01 --exclude-archived
-
-依赖：requests
-    pip install requests
+GitHub 客户端（token / 限流 / 重试）由 ``detector.deps.GitHubClient`` 统一实现。
 """
 
 import argparse
-import csv
-import json
-import os
 import sys
 import time
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-try:
-    import requests
-except ImportError:
-    print("[错误] 缺少依赖 requests，请先执行: pip install requests")
-    sys.exit(1)
-
+from detector.deps import (
+    GITHUB_CONFIG,
+    OUTPUT_DIR,
+    GitHubClient,
+    MissingDependency,
+    ensure_dir,
+    ensure_utf8_stdio,
+    write_csv,
+    write_json,
+)
 
 # ---------------------------------------------------------------------------
 # 常量
 # ---------------------------------------------------------------------------
-GITHUB_API = "https://api.github.com"
 DEFAULT_KEYWORDS = [
     "mcp server",
     "model context protocol",
@@ -78,83 +51,25 @@ DEFAULT_KEYWORDS = [
 # 每页结果数（GitHub API 最大 100）
 PER_PAGE = 100
 
-# 请求超时（秒）
-TIMEOUT = 30
-
-# 重试次数
-MAX_RETRIES = 3
-
-# 重试间隔（秒）
-RETRY_DELAY = 5
-
 
 class GitHubMCPCrawler:
-    """GitHub MCP 仓库抓取器"""
+    """GitHub MCP 仓库抓取器（HTTP 细节交给 deps.GitHubClient）。"""
 
     def __init__(self, token: Optional[str] = None, fetch_readme: bool = False):
         self.token = token
         self.fetch_readme = fetch_readme
-        # 复用 Session 以保持连接与头信息，避免每个请求都重建 TCP 连接
-        self.session = requests.Session()
-        self.session.headers.update({
-            "Accept": "application/vnd.github+json",       # GitHub REST API 媒体类型
-            "X-GitHub-Api-Version": "2022-11-28",          # API 版本固定
-            "User-Agent": "MCP-GitHub-Crawler/1.0",        # GitHub 要求提供 UA
-        })
-        if token:
-            self.session.headers["Authorization"] = f"Bearer {token}"  # Bearer Token 鉴权
-
-        # 速率限制状态（由响应头 X-RateLimit-* 回填）
-        self.rate_limit_remaining = None
-        self.rate_limit_reset = None
+        self.client = GitHubClient(token=token)
 
     # ------------------------------------------------------------------
     # 基础请求
     # ------------------------------------------------------------------
-    def _request(self, url: str, params: Optional[Dict] = None) -> Optional[Dict]:
-        """带重试和速率限制处理的 GET 请求（返回 JSON 或 None）。"""
-        for attempt in range(MAX_RETRIES):  # 最多 MAX_RETRIES 次尝试
-            try:
-                resp = self.session.get(url, params=params, timeout=TIMEOUT)
-
-                # 从响应头更新速率限制状态（剩余次数 / 重置时间戳）
-                self.rate_limit_remaining = int(resp.headers.get("X-RateLimit-Remaining", 0))
-                self.rate_limit_reset = int(resp.headers.get("X-RateLimit-Reset", 0))
-
-                if resp.status_code == 200:  # 成功
-                    return resp.json()
-
-                # 403 且配额耗尽：等 reset 时刻 + 5 秒再重试
-                if resp.status_code == 403 and self.rate_limit_remaining == 0:
-                    wait_time = max(self.rate_limit_reset - int(time.time()), 0) + 5
-                    print(f"[速率限制] 已达上限，等待 {wait_time:.0f} 秒后重试...")
-                    time.sleep(wait_time)
-                    continue
-
-                # 可重试的临时性错误码（422 校验失败 / 403 / 502 / 503 网关错误）
-                if resp.status_code in (422, 403, 502, 503):
-                    print(f"[警告] HTTP {resp.status_code}，{RETRY_DELAY}秒后重试 "
-                          f"({attempt + 1}/{MAX_RETRIES})")
-                    time.sleep(RETRY_DELAY)
-                    continue
-
-                print(f"[错误] HTTP {resp.status_code}: {resp.text[:200]}")
-                return None  # 其他错误码不重试
-
-            except requests.RequestException as e:
-                print(f"[错误] 请求异常: {e}，{RETRY_DELAY}秒后重试 "
-                      f"({attempt + 1}/{MAX_RETRIES})")
-                time.sleep(RETRY_DELAY)
-
-        return None  # 重试耗尽仍失败
+    def _request(self, url: str, params: Optional[Dict] = None) -> Optional[Any]:
+        """GET 请求（带重试与限流处理）；失败返回 None。"""
+        return self.client.get_json(url, params=params)
 
     def _check_rate_limit(self) -> None:
-        """检查速率限制，剩余次数少时主动等待"""
-        if self.rate_limit_remaining is not None and self.rate_limit_remaining <= 5:
-            wait_time = max(self.rate_limit_reset - int(time.time()), 0) + 5
-            if wait_time > 0:
-                print(f"[速率限制] 剩余 {self.rate_limit_remaining} 次，等待 {wait_time:.0f} 秒...")
-                time.sleep(wait_time)
+        """剩余配额过少时主动等待。"""
+        self.client.respect_rate_limit(threshold=5)
 
     # ------------------------------------------------------------------
     # 搜索仓库
@@ -224,22 +139,12 @@ class GitHubMCPCrawler:
         query = self.build_query(keyword, filters)  # 拼接查询串
 
         while total_fetched < max_results:  # 循环直到达到上限或没有更多
-            self._check_rate_limit()  # 主动等待，避免撞上配额
-
-            params = {
-                "q": query,
-                "sort": "stars",       # 按 star 降序
-                "order": "desc",
-                "per_page": PER_PAGE,  # 每页 100
-                "page": page,
-            }
-
             print(f"[搜索] 查询='{query}'  第 {page} 页...")
-            data = self._request(f"{GITHUB_API}/search/repositories", params=params)
+            data = self.client.search(query, page=page, per_page=PER_PAGE)
 
             if not data:  # 请求失败
                 break
-            items = data.get("items", [])
+            items = data.get("items", []) if isinstance(data, dict) else []
             if not items:  # 本页无结果 → 结束
                 break
 
@@ -341,54 +246,15 @@ class GitHubMCPCrawler:
     # ------------------------------------------------------------------
     def fetch_repo_detail(self, owner: str, repo: str) -> Optional[Dict]:
         """获取单个仓库的详细信息"""
-        self._check_rate_limit()
-        return self._request(f"{GITHUB_API}/repos/{owner}/{repo}")
+        return self.client.repo_detail(owner, repo)
 
     def fetch_readme(self, owner: str, repo: str) -> Optional[str]:
         """获取仓库 README 内容（纯文本）；没有 README 返回 None。"""
-        self._check_rate_limit()
-        resp = None
-        for attempt in range(MAX_RETRIES):
-            try:
-                r = self.session.get(
-                    f"{GITHUB_API}/repos/{owner}/{repo}/readme",
-                    headers={"Accept": "application/vnd.github.raw"},  # raw 类型直接拿纯文本
-                    timeout=TIMEOUT,
-                )
-                self.rate_limit_remaining = int(r.headers.get("X-RateLimit-Remaining", 0))
-                self.rate_limit_reset = int(r.headers.get("X-RateLimit-Reset", 0))
-
-                if r.status_code == 200:  # 成功
-                    return r.text
-                if r.status_code == 404:  # 仓库没有 README
-                    return None
-                if r.status_code == 403 and self.rate_limit_remaining == 0:  # 配额耗尽
-                    wait_time = max(self.rate_limit_reset - int(time.time()), 0) + 5
-                    time.sleep(wait_time)
-                    continue
-                time.sleep(RETRY_DELAY)  # 其他错误稍等重试
-            except requests.RequestException:
-                time.sleep(RETRY_DELAY)
-        return None  # 重试耗尽
+        return self.client.readme(owner, repo)
 
     def fetch_recent_commits(self, owner: str, repo: str, count: int = 5) -> List[Dict]:
         """获取最近的提交记录（精简字段：sha 前 8 位/首行 message/日期/作者）。"""
-        self._check_rate_limit()
-        data = self._request(
-            f"{GITHUB_API}/repos/{owner}/{repo}/commits",
-            params={"per_page": count},
-        )
-        if not data:
-            return []
-        commits = []
-        for c in data:  # 抽取核心字段
-            commits.append({
-                "sha": c.get("sha", "")[:8],
-                "message": c.get("commit", {}).get("message", "").split("\n")[0],  # 取首行
-                "date": c.get("commit", {}).get("author", {}).get("date", ""),
-                "author": c.get("commit", {}).get("author", {}).get("name", ""),
-            })
-        return commits
+        return self.client.commits(owner, repo, count=count)
 
     # ------------------------------------------------------------------
     # 数据清洗
@@ -511,30 +377,23 @@ class GitHubMCPCrawler:
 # 输出
 # ---------------------------------------------------------------------------
 def save_json(data: List[Dict], filepath: str) -> None:
-    """保存为 JSON"""
-    with open(filepath, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    """保存为 JSON。"""
+    write_json(filepath, data)
     print(f"[保存] JSON -> {filepath} ({len(data)} 条)")
 
 
 def save_csv(data: List[Dict], filepath: str) -> None:
-    """保存为 CSV（不含 README 和 commits 等长文本字段）"""
+    """保存为 CSV（不含 README 和 commits 等长文本字段）。"""
     if not data:
         return
-
-    # 排除长文本字段
     exclude_fields = {"readme", "recent_commits", "topics"}
-    fieldnames = [k for k in data[0].keys() if k not in exclude_fields]
-    # 单独处理 topics
-    fieldnames.append("topics")
-
-    with open(filepath, "w", encoding="utf-8-sig", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        writer.writeheader()
-        for row in data:
-            row_copy = {k: v for k, v in row.items() if k not in exclude_fields}
-            row_copy["topics"] = ", ".join(row.get("topics", []))
-            writer.writerow(row_copy)
+    fieldnames = [k for k in data[0].keys() if k not in exclude_fields] + ["topics"]
+    rows = []
+    for row in data:
+        row_copy = {k: v for k, v in row.items() if k not in exclude_fields}
+        row_copy["topics"] = ", ".join(row.get("topics", []))
+        rows.append(row_copy)
+    write_csv(filepath, rows, fieldnames)
     print(f"[保存] CSV  -> {filepath} ({len(data)} 条)")
 
 
@@ -572,23 +431,23 @@ def save_summary(data: List[Dict], filepath: str) -> None:
         ],
     }
 
-    with open(filepath, "w", encoding="utf-8") as f:
-        json.dump(summary, f, ensure_ascii=False, indent=2)
+    write_json(filepath, summary)
     print(f"[保存] 摘要 -> {filepath}")
 
 
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
-def main():
+def main() -> int:
+    ensure_utf8_stdio()
     parser = argparse.ArgumentParser(
-        description="GitHub MCP 工具插件抓取脚本",
+        description="GitHub MCP 工具插件抓取",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__,
     )
     parser.add_argument(
         "--token",
-        default=os.environ.get("GITHUB_TOKEN", ""),
+        default=GITHUB_CONFIG["token"],
         help="GitHub Personal Access Token（也可通过环境变量 GITHUB_TOKEN 设置）",
     )
     parser.add_argument(
@@ -615,7 +474,7 @@ def main():
     )
     parser.add_argument(
         "--output",
-        default="./output",
+        default=str(OUTPUT_DIR),
         help="输出目录（默认: ./output）",
     )
 
@@ -722,7 +581,7 @@ def main():
     filters = {k: v for k, v in filters.items() if v is not None and v is not False}
 
     # 创建输出目录
-    os.makedirs(args.output, exist_ok=True)
+    out_dir = ensure_dir(Path(args.output))
 
     # 打印配置
     print("=" * 60)
@@ -733,7 +592,7 @@ def main():
     print(f"  每词上限: {args.max_results}")
     print(f"  抓README: {'是' if args.fetch_readme else '否'}")
     print(f"  抓提交:   {'是' if args.fetch_commits else '否'}")
-    print(f"  输出目录: {args.output}")
+    print(f"  输出目录: {out_dir}")
     if filters:
         print(f"  筛选条件:")
         for k, v in filters.items():
@@ -744,7 +603,11 @@ def main():
     print("=" * 60)
 
     # 执行抓取
-    crawler = GitHubMCPCrawler(token=args.token or None, fetch_readme=args.fetch_readme)
+    try:
+        crawler = GitHubMCPCrawler(token=args.token or None, fetch_readme=args.fetch_readme)
+    except MissingDependency as e:
+        print(f"[错误] {e}")
+        return 1
     results = crawler.crawl(
         keywords=args.keywords,
         max_results=args.max_results,
@@ -754,18 +617,17 @@ def main():
 
     if not results:
         print("\n[警告] 未抓取到任何结果，请检查网络或关键词。")
-        sys.exit(1)
+        return 1
 
     # 生成文件名（带时间戳）
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    json_path = os.path.join(args.output, f"mcp_repos_{timestamp}.json")
-    csv_path = os.path.join(args.output, f"mcp_repos_{timestamp}.csv")
-    summary_path = os.path.join(args.output, f"mcp_summary_{timestamp}.json")
+    json_path = out_dir / f"mcp_repos_{timestamp}.json"
+    csv_path = out_dir / f"mcp_repos_{timestamp}.csv"
+    summary_path = out_dir / f"mcp_summary_{timestamp}.json"
 
-    # 保存
-    save_json(results, json_path)
-    save_csv(results, csv_path)
-    save_summary(results, summary_path)
+    save_json(results, str(json_path))
+    save_csv(results, str(csv_path))
+    save_summary(results, str(summary_path))
 
     # 打印 Top 10
     print(f"\n{'='*60}")
@@ -782,7 +644,8 @@ def main():
     print(f"  - {json_path}")
     print(f"  - {csv_path}")
     print(f"  - {summary_path}")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

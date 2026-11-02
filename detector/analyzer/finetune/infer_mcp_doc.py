@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
+r"""
 infer_mcp_doc.py — 用微调后的 MCP 文档模型对工具代码生成结构化说明文档
 =====================================================================
-用法 :
-    python infer_mcp_doc.py --model_dir models\Qwen2.5-3B-Instruct \
+用法（在项目根执行）::
+
+    python -m detector.analyzer.finetune.infer_mcp_doc \
+        --model_dir models\Qwen2.5-3B-Instruct \
         --adapter_dir adapter_mcp_doc --code-file <工具代码文件或目录> \
         [--out out.jsonl] [--max_new_tokens 600]
 
@@ -15,6 +17,8 @@ infer_mcp_doc.py — 用微调后的 MCP 文档模型对工具代码生成结构
   * security_declarations 六个字段：
       file_access / network / env_vars / subprocess / obfuscation / hidden_flags
   * 输出默认打印到 stdout，可用 --out 写 JSONL（每行 {file, doc}）
+
+依赖 : torch / transformers / peft（见 requirements-finetune.txt）
 """
 
 import argparse

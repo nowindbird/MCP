@@ -1,86 +1,118 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-MPV-Detector 统一配置中心
-========================
-集中管理数据源路径、检测阈值、LLM 配置、沙箱参数等。
-所有模块通过 from config import CONFIG 访问，避免硬编码。
+MPV-Detector 配置中心
+=====================
+**唯一事实来源（single source of truth）**：所有路径 / 阈值 / 端点 / 凭据默认值都写在这里。
+
+约定
+----
+* 本文件只做「纯配置定义」，不 import 项目内任何模块（因此可独立运行自检）。
+* 其它模块**不要**自己拼路径、不要重复定义跳过目录/扩展名/阈值，
+  统一 `from detector.deps import ...` 取用（deps 会读本文件）。
+* 路径解析优先级：环境变量 > 项目内默认目录。换机器无需改代码。
+
+自检::
+
+    python detector/config.py
 """
 
 import os
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
-# 路径配置（相对本项目根目录解析）
+# 路径配置
 # ---------------------------------------------------------------------------
-PROJECT_ROOT = Path(__file__).resolve().parent.parent  # 项目根（detector/ 的上级，数据目录所在）
-
-
-def _resolve_dir(env_var: str, default_rel: str, legacy: str = "") -> Path:
-    """解析数据目录，优先级：环境变量 > 项目内默认 > 历史遗留绝对路径。
-
-    这样换机器/换盘后无需改代码：设置环境变量即可，默认落在项目内。
-    """
-    env_val = os.environ.get(env_var, "").strip().strip('"')
-    if env_val:
-        return Path(env_val)
-    candidate = PROJECT_ROOT / default_rel
-    if candidate.is_dir():
-        return candidate
-    if legacy and Path(legacy).is_dir():
-        return Path(legacy)
-    return candidate
+PROJECT_ROOT = Path(__file__).resolve().parent.parent  # detector/ 的上级 = 项目根
 
 
 def _env(key: str, default: str) -> str:
-    return os.environ.get(key, default)
+    """读取环境变量（自动去空白/引号），缺省返回默认值。"""
+    val = os.environ.get(key, "")
+    return val.strip().strip('"') if val.strip() else default
 
 
-# 仓库数据源（其下为 <owner>_<repo> 文件夹）
-#   大型仓库：完整仓库代码；中型仓库：info.json 元数据（+ 代码待补拉）
-#   默认均取项目内 mcp插件/，可用环境变量覆盖：
-#     MPV_LARGE_REPO_SOURCE / MPV_MEDIUM_REPO_META
-LARGE_REPO_SOURCE = _resolve_dir("MPV_LARGE_REPO_SOURCE", "mcp插件", r"D:\mcp插件")
+def _resolve_dir(env_var: str, default_rel: str) -> Path:
+    """解析数据目录：环境变量 > 项目内默认目录（相对项目根）。"""
+    env_val = _env(env_var, "")
+    if env_val:
+        return Path(env_val).expanduser()
+    return PROJECT_ROOT / default_rel
+
+
+# 仓库代码根（其下为 <owner>_<repo> 文件夹；含完整代码或被检源码）
+LARGE_REPO_SOURCE = _resolve_dir("MPV_LARGE_REPO_SOURCE", "mcp插件")
+
+# 插件元数据目录（其下为 <owner>_<repo>/info.json）
 MEDIUM_REPO_META = _resolve_dir("MPV_MEDIUM_REPO_META", "mcp插件")
 
-# 输出根目录（可用 MPV_OUTPUT_DIR 覆盖）
+# 产物根目录（扫描结果 / 生成的语义文档 / 报告）
 OUTPUT_DIR = _resolve_dir("MPV_OUTPUT_DIR", "output")
 
-# 扫描结果输出目录
+# 单仓库扫描结果 JSON 目录（<owner>__<repo>.json）
 SCAN_OUTPUT_DIR = OUTPUT_DIR / "scan_results"
 
-# 扫描汇总 CSV
+# 扫描汇总 CSV（所有模块共用同一列口径，见 SCAN_SUMMARY_FIELDS）
 SCAN_SUMMARY_CSV = OUTPUT_DIR / "scan_summary.csv"
 
+# 代码获取缓存根（tarball / tree+raw 落盘位置）
+CACHE_ROOT = _resolve_dir("MPV_CACHE_ROOT", "output/cache")
+
+# 沙箱运行的临时工作目录（strace / tcpdump / 蜜罐文件）
+SANDBOX_WORK_DIR = OUTPUT_DIR / "sandbox_work"
+
 # ---------------------------------------------------------------------------
-# 静态检测配置
+# 静态扫描口径（扫描 / 代码获取 / 语义文档 三处共用，避免各写一套）
 # ---------------------------------------------------------------------------
 STATIC_CONFIG = {
+    # 遍历时跳过的目录（统一小写比较；静态扫描额外允许 docs/ 参与扫描）
     "SKIP_DIRS": {
-        ".git", "node_modules", "__pycache__", ".venv", "venv", "env", "dist",
-        "build", ".next", ".nuxt", ".cache", "vendor", "target", "bin", "obj",
-        ".turbo", ".nx", "coverage", ".yarn", ".pnpm-store", "third_party",
-        ".idea", ".vscode", ".github", ".circleci",
+        ".git", ".hg", ".svn", ".github", ".circleci", ".clinerules",
+        "node_modules", "__pycache__", ".venv", "venv", "env",
+        "dist", "build", ".next", ".nuxt", ".svelte-kit", ".cache",
+        "vendor", "third_party", "libs", "assets", "fonts", "images", "img",
+        "target", "bin", "obj", ".gradle", ".dart_tool", ".mvn",
+        ".tox", ".pytest_cache", ".mypy_cache", ".ruff_cache",
+        ".turbo", ".nx", "coverage", ".yarn", ".pnpm-store",
+        "testdata", ".idea", ".vscode",
     },
+    # 语义文档生成额外跳过（测试/示例/文档目录不代表插件真实能力）
+    "DOC_SKIP_DIRS": {"tests", "test", "__tests__", "docs", "doc",
+                      "examples", "example", "scripts"},
+    # 参与扫描的文件扩展名（主流代码/脚本/配置/文档）
     "SCAN_EXTS": {
-        ".py", ".js", ".mjs", ".cjs", ".ts", ".tsx", ".jsx", ".go", ".rs",
-        ".sh", ".bash", ".zsh", ".ps1", ".rb", ".java", ".cs", ".c", ".cpp",
-        ".h", ".hpp", ".zig", ".md", ".markdown", ".json", ".yaml", ".yml",
-        ".toml", ".ini", ".cfg", ".txt", ".html", ".htm", ".sql", ".lua",
-        ".php", ".swift", ".kt", ".dockerfile", ".mcp", ".env",
+        ".py", ".pyi", ".js", ".mjs", ".cjs", ".ts", ".tsx", ".jsx",
+        ".go", ".rs", ".sh", ".bash", ".zsh", ".ps1", ".rb", ".java", ".cs",
+        ".c", ".cpp", ".cc", ".h", ".hpp", ".zig", ".md", ".markdown",
+        ".json", ".yaml", ".yml", ".toml", ".ini", ".cfg", ".txt",
+        ".html", ".htm", ".sql", ".lua", ".php", ".swift", ".kt", ".pl",
+        ".r", ".gradle", ".mustache", ".dockerfile", ".env", ".mcp",
     },
+    # 无标准扩展名但需要扫描/保留的特殊文件名
     "SPECIAL_FILES": {
-        "dockerfile", "makefile", "requirements.txt", "setup.py",
-        "pyproject.toml", "package.json", "package-lock.json",
-        "pnpm-lock.yaml", "yarn.lock", "poetry.lock", "readme", "readme.md",
-        "skill.md", "agent.md",
+        "dockerfile", "makefile", "cmakelists.txt", "requirements.txt",
+        "setup.py", "setup.cfg", "pyproject.toml", "package.json",
+        "package-lock.json", "pnpm-lock.yaml", "yarn.lock", "poetry.lock",
+        "pipfile", "gemfile", "podfile", ".env.example", ".env.sample",
+        "readme", "readme.md", "readme.markdown",
+        "skill.md", "skills.md", "agent.md", "agents.md",
     },
-    # 单文件大小上限（超过则跳过，避免巨型 lockfile 爆炸）
+    # 纯源码扩展名（代码获取 / AST 硬事实 / 语义文档只用这些）
+    "CODE_EXTS": {
+        ".py", ".pyi", ".js", ".mjs", ".cjs", ".ts", ".tsx", ".jsx",
+        ".go", ".rs", ".java", ".cs", ".php", ".rb", ".kt", ".swift",
+    },
+    # 单文件大小上限（超过则跳过，避免巨型 lockfile / 二进制爆炸）
     "MAX_FILE_SIZE_BYTES": 8 * 1024 * 1024,  # 8MB
-    # 单文件最大行数（截断，避免正则回溯过慢）
+    # 单行最大长度（截断，避免正则回溯过慢）
     "MAX_LINE_LENGTH": 2000,
     # eval 高密度阈值（单文件 eval 次数）
     "EVAL_DENSITY_THRESHOLD": 5,
+    # 语义文档 / 关键文件抽取：每仓库最多文件数与单文件最大字符数
+    "MAX_FILES_PER_REPO": 8,
+    "MAX_FILE_CHARS": 8000,
+    # README 读取上限
+    "MAX_README_CHARS": 10000,
 }
 
 # ---------------------------------------------------------------------------
@@ -92,27 +124,37 @@ OLLAMA_API_BASE = f"{OLLAMA_HOST}/v1"
 DEFAULT_MODEL = _env("MPV_MODEL", "qwen3-coder:30b")
 
 # ---------------------------------------------------------------------------
-# 对齐率检测配置
+# 语义对齐率检测配置
 # ---------------------------------------------------------------------------
 ALIGN_CONFIG = {
     # LLM 后端
-    "backend": os.environ.get("ALIGN_BACKEND", "openai"),
+    "backend": _env("ALIGN_BACKEND", "openai"),
     "api_base": _env("ALIGN_API_BASE", OLLAMA_API_BASE),
-    "api_key": os.environ.get("ALIGN_API_KEY", ""),
+    "api_key": _env("ALIGN_API_KEY", ""),
     "model": _env("ALIGN_MODEL", DEFAULT_MODEL),
-    # LLM 生成的说明文档最大文件数/单文件字符数
-    "MAX_FILES_PER_REPO": 8,
-    "MAX_FILE_CHARS": 8000,
-    # 对齐率判定阈值
+    # 对齐率判定阈值（align_rate 与 sandbox_rules 共用，改这里即全链路生效）
     "CONFLICT_RATE_THRESHOLD_SUSPICIOUS": 0.3,  # 矛盾率 >= 30% → suspicious 候选
     "CONFLICT_RATE_THRESHOLD_HIGH": 0.6,       # 矛盾率 >= 60% → malicious 候选
+    # DANGER 信号判定：安全矛盾率阈值 / 冲突条数阈值
+    "DANGER_SEC_CONFLICT_RATE": 0.3,
+    "DANGER_CONFLICT_COUNT": 3,
+}
+
+# ---------------------------------------------------------------------------
+# 综合判定阈值（静态扫描命中 + 语义对齐信号 → LOW / REVIEW / HIGH_RISK_REVIEW）
+# ---------------------------------------------------------------------------
+VERDICT_CONFIG = {
+    "CRIT_TIER_HIGH": 10,   # CRITICAL 命中数 >= 10 → 高
+    "HIGH_TIER_HIGH": 50,   # HIGH 命中数 >= 50     → 高
+    "CRIT_TIER_MED": 1,     # CRITICAL 命中数 >= 1  → 中
+    "HIGH_TIER_MED": 5,     # HIGH 命中数 >= 5      → 中
 }
 
 # ---------------------------------------------------------------------------
 # 沙箱配置
 # ---------------------------------------------------------------------------
 SANDBOX_CONFIG = {
-    # ---- 镜像（由 sandbox/Dockerfile 构建） ----
+    # ---- 镜像 ----
     "docker_image": "mpv-sandbox:latest",
     "base_image": "ubuntu:22.04",
     # ---- 资源限制 ----
@@ -139,7 +181,7 @@ SANDBOX_CONFIG = {
     "net_output": "/tmp/mpv_net.pcap",
     # 容器内插件代码挂载点
     "repo_mount": "/app",
-    # -- openat 噪声前缀: 运行时/系统库加载不应算作"文件访问行为"
+    # openat 噪声前缀: 运行时/系统库加载不应算作"文件访问行为"
     "open_noise_prefixes": [
         "/usr/", "/lib/", "/lib64/", "/proc/", "/sys/", "/etc/ld.so",
         "/etc/nsswitch.conf", "/etc/localtime", "/etc/hosts",
@@ -147,13 +189,13 @@ SANDBOX_CONFIG = {
         "/dev/null", "/dev/urandom", "/dev/random", "/dev/tty", "/dev/pts",
         "/app/node_modules/", "/app/venv/", "/app/.venv/", "/app/dist/",
     ],
-    # -- 敏感路径模式: 命中即视为高危文件访问（含上报"试图读取"）
+    # 敏感路径模式: 命中即视为高危文件访问（含上报"试图读取"）
     "sensitive_path_patterns": [
         r"\.ssh/", r"\.aws/", r"\.env$", r"id_rsa", r"id_ed25519",
         r"credential", r"/etc/passwd", r"/etc/shadow", r"\.git-credentials",
         r"\.netrc", r"\.docker/config\.json", r"honeypot",
     ],
-    # -- 蜜罐落地文件: 目标若读取即命中高危信号
+    # 蜜罐落地文件: 目标若读取即命中高危信号
     "honeypot_files": {
         "/tmp/honeypot_ssh_key_never_exist":
             "-----BEGIN OPENSSH PRIVATE KEY-----\n"
@@ -164,7 +206,7 @@ SANDBOX_CONFIG = {
             ' "aws_secret_access_key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"}\n',
     },
     # MCP 工具激活: 通过 stdio 发送 JSON-RPC(initialize/tools/list/tools/call),
-    #      否则插件只启动不干活, 休眠触发型恶意行为无法被观测 ----
+    # 否则插件只启动不干活, 休眠触发型恶意行为无法被观测
     "probe": {
         "enabled": True,
         "initialize_timeout": 10,
@@ -188,7 +230,7 @@ SANDBOX_CONFIG = {
 }
 
 # ---------------------------------------------------------------------------
-# LLM 说明文档生成配置（code_to_doc）
+# LLM 语义文档生成配置
 # ---------------------------------------------------------------------------
 DOC_GEN_CONFIG = {
     "backend": _env("DOC_BACKEND", "openai"),
@@ -197,39 +239,78 @@ DOC_GEN_CONFIG = {
     "model": _env("DOC_MODEL", DEFAULT_MODEL),
     "temperature": 0.3,
     "max_tokens": 4096,
+    "timeout": 600,
 }
 
 # ---------------------------------------------------------------------------
-# GitHub API 配置
+# GitHub / HTTP 配置
 # ---------------------------------------------------------------------------
 GITHUB_CONFIG = {
     "api_url": "https://api.github.com",
+    "codeload_url": "https://codeload.github.com",
     "api_version": "2022-11-28",
     "user_agent": "MPV-Detector/2.0",
-    "token": os.environ.get("GITHUB_TOKEN", ""),
+    "token": _env("GITHUB_TOKEN", ""),
     "timeout": 30,
     "max_retries": 3,
     "retry_delay": 5,
 }
 
 # ---------------------------------------------------------------------------
-# 合并为全局 CONFIG
+# 代码获取（fetcher）配置
+# ---------------------------------------------------------------------------
+FETCH_CONFIG = {
+    "method": _env("MPV_FETCH_METHOD", "auto"),  # auto / tarball / tree
+    "workers": 8,
+    # 单仓库硬超时（秒）：codeload 偶发挂死，必须有上限
+    "hard_timeout": 180,
+    "chunk_size": 64 * 1024,
+}
+
+# ---------------------------------------------------------------------------
+# 扫描汇总 CSV 的统一列口径（summary 写、run_flow 读，两边都从这里取）
+# ---------------------------------------------------------------------------
+SEVERITIES = ("CRITICAL", "HIGH", "MEDIUM", "LOW")
+SCAN_SUMMARY_FIELDS = [
+    "repo", "verdict", "files_scanned", "hits",
+    *SEVERITIES,
+    "top_severity", "fetch_method", "confidence", "reason",
+]
+
+# ---------------------------------------------------------------------------
+# 合并为全局 CONFIG（只读视图，供需要整份配置的场景使用）
 # ---------------------------------------------------------------------------
 CONFIG = {
     "project_root": str(PROJECT_ROOT),
     "large_repo_source": str(LARGE_REPO_SOURCE),
     "medium_repo_meta": str(MEDIUM_REPO_META),
+    "output_dir": str(OUTPUT_DIR),
     "scan_output_dir": str(SCAN_OUTPUT_DIR),
     "scan_summary_csv": str(SCAN_SUMMARY_CSV),
+    "cache_root": str(CACHE_ROOT),
+    "sandbox_work_dir": str(SANDBOX_WORK_DIR),
     "static": STATIC_CONFIG,
     "align": ALIGN_CONFIG,
+    "verdict": VERDICT_CONFIG,
     "sandbox": SANDBOX_CONFIG,
     "doc_gen": DOC_GEN_CONFIG,
     "github": GITHUB_CONFIG,
+    "fetch": FETCH_CONFIG,
+    "scan_summary_fields": SCAN_SUMMARY_FIELDS,
+    "severities": SEVERITIES,
+    "paths": {
+        "project_root": str(PROJECT_ROOT),
+        "data": str(LARGE_REPO_SOURCE),
+        "output": str(OUTPUT_DIR),
+        "scan_results": str(SCAN_OUTPUT_DIR),
+        "scan_summary": str(SCAN_SUMMARY_CSV),
+        "cache": str(CACHE_ROOT),
+        "sandbox_work": str(SANDBOX_WORK_DIR),
+    },
 }
 
 if __name__ == "__main__":
-    # 自检：打印所有配置
+    # 自检：打印所有配置（Path / set 转成可序列化结构）
     import json
 
     def _jsonable(obj):

@@ -3,7 +3,7 @@
 """
 MPV-Detector 语义对齐率检测模块
 ================================
-把"声明的功能"（README/description）与"代码的实际行为"（AST 硬事实 + LLM 生成文档）
+把"声明的功能"（README / description）与"代码的实际行为"（AST 硬事实 + LLM 生成文档）
 做逐声明比对，输出对齐率与矛盾率。矛盾率是投毒的核心信号之一。
 
 设计原则:
@@ -14,24 +14,38 @@ MPV-Detector 语义对齐率检测模块
   3. 安全相关声明的矛盾率优先: 文件访问/网络/子进程/凭据/混淆
   4. 输出可直接送沙箱规则生成器（声明的允许行为清单）
 
-用法:
-  python align_rate.py --repo-dir mcp插件\\某仓库
-  python align_rate.py --repo-dir mcp插件\\某仓库 --doc path\\to\\generated_doc.md
-  python align_rate.py --repo-dir mcp插件\\某仓库 --readme path\\to\\README.md
+阈值统一来自 ``detector.config.ALIGN_CONFIG``，遍历口径来自 ``detector.deps``，
+因此本模块与 sandbox_rules / scanner 对"什么算危险行为"始终一致。
+
+用法::
+
+    python -m detector.cli align --repo-dir mcp插件/<owner>_<repo>
+    python -m detector.cli align --repo-dir <repo> --doc generated_doc.md --brief
 """
 
 import argparse
 import ast
 import json
-import os
 import re
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+from detector.deps import (
+    ALIGN_CONFIG,
+    detect_languages as _detect_languages,
+    ensure_utf8_stdio,
+    iter_repo_files,
+    read_readme,
+    read_text,
+    write_json,
+)
+
 # ---------------------------------------------------------------------------
-# 1. AST 硬事实收集（Python）
+# 1. 事实/声明共用的类别与关键词库
 # ---------------------------------------------------------------------------
+FACT_CATEGORIES = ("file_access", "network", "subprocess", "credential", "obfuscation")
+SECURITY_CATEGORIES = set(FACT_CATEGORIES)
 
 # 敏感行为关键词库（英文/中文混合，用于声明和代码双侧匹配）
 SECURITY_KEYWORDS = {
@@ -53,6 +67,14 @@ SECURITY_KEYWORDS = {
 }
 
 
+def _empty_facts() -> Dict[str, List[str]]:
+    """空事实表（五类口径固定，避免各处 key 不一致）。"""
+    return {k: [] for k in FACT_CATEGORIES}
+
+
+# ---------------------------------------------------------------------------
+# 2. AST 硬事实收集（Python）
+# ---------------------------------------------------------------------------
 class AstFactCollector(ast.NodeVisitor):
     """遍历 Python 代码，收集安全相关硬事实（确定性，不执行代码）。"""
 
@@ -77,12 +99,14 @@ class AstFactCollector(ast.NodeVisitor):
         "base64.b64decode", "base64.b64encode", "marshal.loads",
         "pickle.loads", "binascii.unhexlify",
     }
+    SENSITIVE_PATH_RE = re.compile(r"(?i)(\.ssh|\.aws|\.env|id_rsa|credential)")
 
     def __init__(self):
-        self.facts = {k: [] for k in SECURITY_KEYWORDS}
-        self._seen = set()
+        self.facts = _empty_facts()
+        self._seen: set = set()
 
     def _call_name(self, node) -> str:
+        """把调用节点还原成 ``a.b.c`` 形式的点分名。"""
         func = node.func
         parts = []
         while isinstance(func, ast.Attribute):
@@ -92,13 +116,12 @@ class AstFactCollector(ast.NodeVisitor):
             parts.append(func.id)
         return ".".join(reversed(parts))
 
-    def _add(self, category: str, value: str):
+    def _add(self, category: str, value: str) -> None:
         value = value.strip()
-        if not value or value in self._seen:
+        if not value or value in self._seen or len(self.facts[category]) >= 100:
             return
         self._seen.add(value)
-        if len(self.facts[category]) < 100:
-            self.facts[category].append(value)
+        self.facts[category].append(value)
 
     def visit_Call(self, node: ast.Call):
         name = self._call_name(node)
@@ -112,40 +135,45 @@ class AstFactCollector(ast.NodeVisitor):
             self._add("subprocess", f"{name}{str_repr}")
         if name in self.ENV_CALLS:
             self._add("credential", f"{name}{str_repr}")
-        if name in self.EVAL_CALLS:
-            self._add("obfuscation", f"{name}{str_repr}")
-        if name in self.OBFUSCATE_CALLS:
+        if name in self.EVAL_CALLS or name in self.OBFUSCATE_CALLS:
             self._add("obfuscation", f"{name}{str_repr}")
 
-        # 通用文件读取调用
-        if name in self.FILE_CALLS or name.endswith(".read") or name.endswith(".open"):
-            sensitive = any(re.search(r"(?i)(\.ssh|\.aws|\.env|id_rsa|credential)", a)
-                            for a in str_args)
+        # 通用文件读取调用（命中敏感路径或本身就是文件 API 才记录）
+        if name in self.FILE_CALLS or name.endswith((".read", ".open")):
+            sensitive = any(self.SENSITIVE_PATH_RE.search(a) for a in str_args)
             if sensitive or name in self.FILE_CALLS:
                 self._add("file_access", f"{name}{str_repr}")
 
         self.generic_visit(node)
 
 
+# 各语言事实抽取时跳过的目录（语言专属构建产物；保持与历史口径一致，
+# 以免同一仓库因遍历范围变化而改变对齐率结论）
+PY_SKIP_DIRS = {".git", "node_modules", "__pycache__", "venv", ".venv", "dist", "build"}
+JS_SKIP_DIRS = {".git", "node_modules", "dist", "build", ".next", ".nuxt", "coverage"}
+GO_SKIP_DIRS = {".git", "vendor", "bin", "testdata"}
+RUST_SKIP_DIRS = {".git", "target", "vendor"}
+LANG_SKIP_DIRS = {".git", "node_modules", "venv", ".venv", "dist", "build",
+                  "target", "vendor", ".next", "__pycache__", "bin", "obj"}
+
+
 def extract_python_facts(repo_dir: Path) -> Dict[str, List[str]]:
     """扫描仓库所有 .py 文件，收集 AST 硬事实。"""
     collector = AstFactCollector()
-    for root, dirs, files in os.walk(str(repo_dir)):
-        dirs[:] = [d for d in dirs if d not in
-                   {".git", "node_modules", "__pycache__", "venv", ".venv", "dist", "build"}]
-        for f in files:
-            if f.endswith(".py"):
-                try:
-                    tree = ast.parse((Path(root) / f).read_text(
-                        encoding="utf-8-sig", errors="replace"))
-                    collector.visit(tree)
-                except (SyntaxError, OSError):
-                    continue
+    for p in iter_repo_files(repo_dir, exts=(".py",), skip_dirs=PY_SKIP_DIRS):
+        try:
+            tree = ast.parse(read_text(p) or "")
+        except (SyntaxError, ValueError, OSError):
+            continue
+        try:
+            collector.visit(tree)
+        except RecursionError:  # 极端嵌套文件不拖垮整仓分析
+            continue
     return collector.facts
 
 
 # ---------------------------------------------------------------------------
-# 2. 多语言正则硬事实收集（Python AST 覆盖不到时的补充）
+# 3. 多语言正则硬事实收集（Python AST 覆盖不到时的补充）
 # ---------------------------------------------------------------------------
 # 说明: 本机未安装 Go/Rust 工具链，无法用编译器 AST 解析，因此 Go/Rust 与
 # JS/TS 一样走"正则硬事实"通道。所有语言共用同一套五类事实口径，
@@ -154,12 +182,11 @@ def extract_python_facts(repo_dir: Path) -> Dict[str, List[str]]:
 JS_FACT_PATTERNS = {
     "network": [
         r"\b(?:fetch|axios\.|https?\.request|https?\.get|https?\.post|undici)\b",
-        # 带 URL 字面量: 便于 allowlist 提取真实域名
         r"(?:fetch|axios\.\w+|https?\.(?:get|post|request))\s*\(\s*[\"'`](https?://[^\"'`\s]+)",
     ],
     "subprocess": [
         r"\bchild_process\b|\bexecSync\b|\bspawn\b|\bexec\s*\(",
-        r"(?:execSync|exec|spawn)(?:Sync)?\s*\(\s*[\"'][^\"']+",   # 带参: 便于提取命令
+        r"(?:execSync|exec|spawn)(?:Sync)?\s*\(\s*[\"'][^\"']+",
     ],
     "credential": [
         r"process\.env\s*\.\s*[A-Za-z0-9_]*(?:key|secret|token|password|credential)",
@@ -170,25 +197,23 @@ JS_FACT_PATTERNS = {
     ],
     "file_access": [
         r"\bfs\.read(File|FileSync|dir|dirSync)\b",
-        r"fs\.read(?:File|FileSync|dir|dirSync)\s*\(\s*[\"'][^\"']+",  # 带参
+        r"fs\.read(?:File|FileSync|dir|dirSync)\s*\(\s*[\"'][^\"']+",
     ],
 }
 
-# Go 硬事实（正则；本机无 Go 工具链）
 GO_FACT_PATTERNS = {
     "network": [
         r"\bhttp\.(?:Get|Post|NewRequest|Client|DefaultClient)\b",
         r"\bnet\.Dial\b|\bnet/http\b",
-        # 带 URL 字面量: 便于 allowlist 提取真实域名
         r"http\.(?:Get|Post|NewRequest)\s*\(\s*\"(https?://[^\"]+)",
     ],
     "subprocess": [
         r"\bexec\.Command(?:Context)?\b|\bos/exec\b",
-        r"exec\.Command(?:Context)?\s*\(\s*(?:[A-Za-z_][\w.]*\s*,\s*)?[\"`][^\"`]+",  # 带参
+        r"exec\.Command(?:Context)?\s*\(\s*(?:[A-Za-z_][\w.]*\s*,\s*)?[\"`][^\"`]+",
     ],
     "credential": [
         r"\bos\.(?:Getenv|LookupEnv)\b",
-        r"os\.(?:Getenv|LookupEnv)\s*\(\s*[\"`][^\"`]+",   # 带参: 便于提取 env 名
+        r"os\.(?:Getenv|LookupEnv)\s*\(\s*[\"`][^\"`]+",
     ],
     "obfuscation": [
         r"\bbase64\.(?:StdEncoding|URLEncoding)\b|\bencoding/base64\b",
@@ -197,25 +222,23 @@ GO_FACT_PATTERNS = {
     "file_access": [
         r"\bos\.(?:ReadFile|Open|WriteFile|Write|Remove)\b",
         r"\bioutil\.(?:ReadFile|WriteFile)\b",
-        r"os\.(?:ReadFile|Open|WriteFile|Write)\s*\(\s*[\"`][^\"`]+",  # 带参: 便于提取路径
+        r"os\.(?:ReadFile|Open|WriteFile|Write)\s*\(\s*[\"`][^\"`]+",
     ],
 }
 
-# Rust 硬事实（正则；本机无 Rust 工具链）
 RUST_FACT_PATTERNS = {
     "network": [
         r"\breqwest::\w+|\bhyper::\w+|\bureq::\w+",
         r"\bTcpStream::connect\b|\bstd::net::TcpStream\b",
-        # 带 URL 字面量: 便于 allowlist 提取真实域名
         r"(?:reqwest|ureq)::(?:get|post)\s*\(\s*\"(https?://[^\"]+)",
     ],
     "subprocess": [
         r"\bstd::process::Command\b|\bprocess::Command\b|\bCommand::new\b",
-        r"Command::new\s*\(\s*[\"'][^\"']+",   # 带参: 便于提取命令
+        r"Command::new\s*\(\s*[\"'][^\"']+",
     ],
     "credential": [
         r"\bstd::env::var\w*|\benv::var\w*",
-        r"(?:std::)?env::var(?:_os)?\s*\(\s*[\"'][^\"']+",  # 带参
+        r"(?:std::)?env::var(?:_os)?\s*\(\s*[\"'][^\"']+",
     ],
     "obfuscation": [
         r"\bbase64::(?:decode|Engine|engine)\b",
@@ -223,206 +246,143 @@ RUST_FACT_PATTERNS = {
     "file_access": [
         r"\bstd::fs::(?:read|read_to_string|read_dir|File)\b",
         r"\bfs::(?:read|read_to_string|read_dir)\b|\bFile::open\b",
-        r"(?:std::)?fs::(?:read|read_to_string|read_dir|File)\s*\(\s*[\"'][^\"']+",  # 带参
-        r"File::open\s*\(\s*[\"'][^\"']+",     # 带参
+        r"(?:std::)?fs::(?:read|read_to_string|read_dir|File)\s*\(\s*[\"'][^\"']+",
+        r"File::open\s*\(\s*[\"'][^\"']+",
     ],
 }
 
-# 语言 -> (模式表, 扩展名, 额外跳过目录)
+# 语言 → (模式表, 源码扩展名, 跳过目录)
 REGEX_LANGUAGES = {
-    "js": (JS_FACT_PATTERNS,
-           (".js", ".mjs", ".cjs", ".ts", ".tsx", ".jsx"),
-           {".git", "node_modules", "dist", "build", ".next", ".nuxt", "coverage"}),
-    "go": (GO_FACT_PATTERNS,
-           (".go",),
-           {".git", "vendor", "bin", "testdata"}),
-    "rust": (RUST_FACT_PATTERNS,
-             (".rs",),
-             {".git", "target", "vendor"}),
-}
-
-# 语言 -> 源文件扩展名（用于语言探测）
-LANG_EXT_MAP = {
-    "python": (".py",),
-    "js": (".js", ".mjs", ".cjs", ".ts", ".tsx", ".jsx"),
-    "go": (".go",),
-    "rust": (".rs",),
+    "js": (JS_FACT_PATTERNS, (".js", ".mjs", ".cjs", ".ts", ".tsx", ".jsx"), JS_SKIP_DIRS),
+    "go": (GO_FACT_PATTERNS, (".go",), GO_SKIP_DIRS),
+    "rust": (RUST_FACT_PATTERNS, (".rs",), RUST_SKIP_DIRS),
 }
 
 
 def _extract_regex_facts(repo_dir: Path, patterns: Dict[str, List[str]],
                          extensions: Tuple[str, ...],
                          skip_dirs: set) -> Dict[str, List[str]]:
-    """通用正则硬事实收集器: 遍历指定扩展名的文件, 按 category 累积后统一去重。"""
+    """通用正则硬事实收集器：遍历指定扩展名文件，按 category 累积后统一去重。"""
     facts = {k: [] for k in patterns}
-    for root, dirs, files in os.walk(str(repo_dir)):
-        dirs[:] = [d for d in dirs if d not in skip_dirs]
-        for f in files:
-            if not f.endswith(extensions):
-                continue
-            p = Path(root) / f
-            try:
-                text = p.read_text(encoding="utf-8-sig", errors="replace")
-            except OSError:
-                continue
-            for category, pats in patterns.items():
-                for pat in pats:
-                    for m in re.finditer(pat, text, re.I):
-                        facts[category].append(f"{p.name}: {m.group(0)[:120]}")
-    # 全局去重 + 上限
+    for p in iter_repo_files(repo_dir, exts=extensions, skip_dirs=skip_dirs):
+        text = read_text(p)
+        if not text:
+            continue
+        for category, pats in patterns.items():
+            for pat in pats:
+                for m in re.finditer(pat, text, re.I):
+                    facts[category].append(f"{p.name}: {m.group(0)[:120]}")
     for category in facts:
         facts[category] = sorted(set(facts[category]))[:100]
     return facts
 
 
 def extract_js_facts(repo_dir: Path) -> Dict[str, List[str]]:
-    """扫描 .js/.ts/.mjs/.cjs/.jsx/.tsx 文件，用正则收集安全事实。"""
     pats, exts, skip = REGEX_LANGUAGES["js"]
     return _extract_regex_facts(repo_dir, pats, exts, skip)
 
 
 def extract_go_facts(repo_dir: Path) -> Dict[str, List[str]]:
-    """扫描 .go 文件，用正则收集安全事实（本机无 Go 工具链，故走正则）。"""
     pats, exts, skip = REGEX_LANGUAGES["go"]
     return _extract_regex_facts(repo_dir, pats, exts, skip)
 
 
 def extract_rust_facts(repo_dir: Path) -> Dict[str, List[str]]:
-    """扫描 .rs 文件，用正则收集安全事实（本机无 Rust 工具链，故走正则）。"""
     pats, exts, skip = REGEX_LANGUAGES["rust"]
     return _extract_regex_facts(repo_dir, pats, exts, skip)
 
 
 def detect_languages(repo_dir: Path) -> List[str]:
-    """探测仓库包含哪些语言的源文件（用于报告与覆盖率统计）。"""
-    found = set()
-    ignore = {".git", "node_modules", "venv", ".venv", "dist", "build",
-              "target", "vendor", ".next", "__pycache__", "bin", "obj"}
-    for root, dirs, files in os.walk(str(repo_dir)):
-        dirs[:] = [d for d in dirs if d not in ignore]
-        for f in files:
-            for lang, exts in LANG_EXT_MAP.items():
-                if f.endswith(exts):
-                    found.add(lang)
-                    break
-    return sorted(found)
+    """探测仓库语言构成（转调 deps，保持接口向后兼容）。"""
+    return _detect_languages(repo_dir, skip_dirs=LANG_SKIP_DIRS)
 
 
 # ---------------------------------------------------------------------------
-# 3. 原子声明提取（从 README/description）
+# 4. 原子声明提取（从 README / 生成的说明文档）
 # ---------------------------------------------------------------------------
+_SKIP_LINE_RE = re.compile(r"^[\s\-*#>!\]\[|]+$")
+
 
 def extract_claims(text: str) -> List[Dict]:
     """把声明文档拆成原子声明，每条标注类别和原文片段。
+
+    一行命中多个类别时**每个类别各记一条**（如 ``curl ... | sh`` 同时是网络外传
+    与命令执行，两边都应参与对齐判定）。
 
     返回: [{"category": str, "claim": str, "evidence": str}]
     """
     if not text:
         return []
     claims = []
-
-    lines = text.splitlines()
-    for line in lines:
+    for line in text.splitlines():
         line = line.strip()
-        if len(line) < 6 or len(line) > 500:
+        if len(line) < 6 or len(line) > 500:  # 过短/过长都不是有效声明
             continue
-        # 跳过纯标点/链接/代码块标记
-        if re.match(r"^[\s\-*#>!\]\[|]+$", line):
+        if _SKIP_LINE_RE.match(line):  # 纯标点/链接/代码块标记
             continue
-
         for category, patterns in SECURITY_KEYWORDS.items():
-            for pat in patterns:
-                if re.search(pat, line):
-                    claims.append({
-                        "category": category,
-                        "claim": line[:300],
-                        "evidence": line[:300],
-                    })
-                    break  # 一行只归为一个类别
+            if any(re.search(pat, line) for pat in patterns):
+                claims.append({"category": category, "claim": line[:300],
+                               "evidence": line[:300]})
     return claims
 
 
-def extract_readme(repo_dir: Path) -> Optional[str]:
-    """尝试从仓库提取 README 内容。"""
-    candidates = list(repo_dir.glob("README*")) + list(repo_dir.glob("readme*"))
-    for c in candidates:
-        if c.is_file():
-            try:
-                return c.read_text(encoding="utf-8-sig", errors="replace")[:10000]
-            except OSError:
-                continue
-    return None
-
-
 # ---------------------------------------------------------------------------
-# 4. 对齐判定引擎
+# 5. 对齐判定引擎
 # ---------------------------------------------------------------------------
-
 def compute_alignment(repo_dir: Path,
                       readme_text: Optional[str] = None) -> Dict[str, Any]:
-    """核心函数: 计算声明 vs 实际行为的对齐率。
+    """核心函数：计算声明 vs 实际行为的对齐率。
 
-    返回:
-    {
-        "repo": str,
-        "facts": {category: [fact_str, ...]},  # 合并的 AST+正则硬事实
-        "claims": [{"category","claim","evidence"}],
-        "claim_judgments": [{"category","claim","judgment","reason"}],  # judgment=support/conflict/unknown
-        "alignment_rate": float,     # 支持 / (支持+冲突)，无判定时=1.0
-        "conflict_rate": float,      # 冲突 / (支持+冲突)
-        "security_conflict_rate": float,  # 仅安全相关声明的矛盾率
-        "has_hard_facts": bool,      # 是否有硬事实（网络/子进程/凭据/混淆）
-        "verdict_signal": str,       # 投毒信号: CLEAN/WARN/DANGER
-    }
+    返回::
+
+        {
+          "repo", "facts", "claims", "claim_judgments",
+          "alignment_rate",           # 支持 / (支持+冲突)，无判定时 1.0
+          "conflict_rate",            # 冲突 / (支持+冲突)
+          "security_conflict_rate",   # 仅安全相关声明的矛盾率
+          "has_hard_facts",           # 是否存在网络/子进程/凭据/混淆硬事实
+          "verdict_signal",           # CLEAN / WARN / DANGER
+          "_languages", "_claim_count", "_judgment_counts"
+        }
     """
+    repo_dir = Path(repo_dir)
     repo_name = repo_dir.name
 
-    # ---- Step 0: 探测语言构成（便于报告与后续覆盖率统计） ----
+    # ---- Step 0: 语言构成 ----
     languages = detect_languages(repo_dir)
 
-    # ---- Step 1: 收集实际行为硬事实（Python AST + JS/Go/Rust 正则） ----
+    # ---- Step 1: 实际行为硬事实（Python AST + JS/Go/Rust 正则）----
     py_facts = extract_python_facts(repo_dir)
-    js_facts = extract_js_facts(repo_dir)
-    go_facts = extract_go_facts(repo_dir)
-    rust_facts = extract_rust_facts(repo_dir)
-    regex_facts = {k: [] for k in SECURITY_KEYWORDS}
-    for lang_facts in (js_facts, go_facts, rust_facts):
+    regex_facts = _empty_facts()
+    for lang_facts in (extract_js_facts(repo_dir), extract_go_facts(repo_dir),
+                       extract_rust_facts(repo_dir)):
         for cat, vals in lang_facts.items():
             regex_facts[cat].extend(vals)
-    # 合并（去重 + 上限），保持与五类事实口径一致
-    facts = {}
-    for cat in SECURITY_KEYWORDS:
-        facts[cat] = sorted(set(py_facts.get(cat, []) + regex_facts.get(cat, [])))[:200]
-
+    facts = {cat: sorted(set(py_facts.get(cat, []) + regex_facts.get(cat, [])))[:200]
+             for cat in FACT_CATEGORIES}
     has_hard_facts = any(facts.values())
 
-    # ---- Step 2: 提取声明 ----
+    # ---- Step 2: 声明提取 ----
     if readme_text is None:
-        readme_text = extract_readme(repo_dir) or ""
+        readme_text = read_readme(repo_dir) or ""
     claims = extract_claims(readme_text)
 
     # ---- Step 3: 对齐判定 ----
-    judgments = []
-    support_count = 0
-    conflict_count = 0
-    security_support = 0
-    security_conflict = 0
-    security_categories = {"file_access", "network", "subprocess", "credential", "obfuscation"}
+    judgments: List[Dict] = []
+    support_count = conflict_count = 0
+    security_support = security_conflict = 0
 
-    # 收集声明中提到但代码里完全没有硬事实的类别
-    claimed_categories = set(c["category"] for c in claims)
-
-    for cat in SECURITY_KEYWORDS:
+    for cat in FACT_CATEGORIES:
         claim_count = sum(1 for c in claims if c["category"] == cat)
-        fact_count = len(facts.get(cat, []))
+        fact_count = len(facts[cat])
 
         if claim_count == 0 and fact_count == 0:
             continue  # 双方都没提，不算
 
         if fact_count > 0 and claim_count == 0:
             # === 关键投毒信号: 代码里有安全敏感行为，但声明里完全没提 ===
-            # 对每个硬事实都产出 conflict judgment
-            for fact in facts[cat][:5]:  # 取前5条，避免爆炸
+            for fact in facts[cat][:5]:  # 取前 5 条，避免爆炸
                 judgments.append({
                     "category": cat,
                     "claim": f"[shadow] 代码未声明但存在: {fact[:100]}",
@@ -430,50 +390,44 @@ def compute_alignment(repo_dir: Path,
                     "reason": f"代码存在 {cat} 类行为 ({fact_count}处) 但 README 未声明",
                 })
                 conflict_count += 1
-                if cat in security_categories:
+                if cat in SECURITY_CATEGORIES:
                     security_conflict += 1
             continue
 
         if claim_count > 0 and fact_count == 0:
-            # 声明有提到但代码找不到对应硬事实 —— 可能是良性（功能未用敏感API）也可能是文档夸大
-            # 标记为 unknown，不直接算 conflict
+            # 声明提到但代码找不到对应硬事实 → unknown（可能良性，也可能文档夸大）
             for c in claims:
                 if c["category"] == cat:
                     judgments.append({
-                        "category": cat,
-                        "claim": c["claim"],
-                        "judgment": "unknown",
+                        "category": cat, "claim": c["claim"], "judgment": "unknown",
                         "reason": f"声明 {cat} 行为，代码中未找到对应硬事实",
                     })
             continue
 
-        # 双方都有 —— 互相印证，判 support
+        # 双方都有 → 互相印证
         for c in claims:
             if c["category"] == cat:
                 judgments.append({
-                    "category": cat,
-                    "claim": c["claim"],
-                    "judgment": "support",
+                    "category": cat, "claim": c["claim"], "judgment": "support",
                     "reason": f"声明 {cat}，代码中有 {fact_count} 处硬事实支撑",
                 })
                 support_count += 1
-                if cat in security_categories:
+                if cat in SECURITY_CATEGORIES:
                     security_support += 1
 
     # ---- Step 4: 计算比率 ----
     total_judged = support_count + conflict_count
-    alignment_rate = support_count / total_judged if total_judged > 0 else 1.0
-    conflict_rate = conflict_count / total_judged if total_judged > 0 else 0.0
-
+    alignment_rate = support_count / total_judged if total_judged else 1.0
+    conflict_rate = conflict_count / total_judged if total_judged else 0.0
     sec_total = security_support + security_conflict
-    security_conflict_rate = (security_conflict / sec_total
-                              if sec_total > 0 else 0.0)
+    security_conflict_rate = security_conflict / sec_total if sec_total else 0.0
 
-    # ---- Step 5: 投毒信号判定 ----
+    # ---- Step 5: 投毒信号判定（阈值集中于 config.ALIGN_CONFIG）----
     verdict_signal = "CLEAN"
     if conflict_count > 0:
         verdict_signal = "WARN"
-    if security_conflict_rate >= 0.3 or conflict_count >= 3:
+    if (security_conflict_rate >= ALIGN_CONFIG["DANGER_SEC_CONFLICT_RATE"]
+            or conflict_count >= ALIGN_CONFIG["DANGER_CONFLICT_COUNT"]):
         verdict_signal = "DANGER"
 
     return {
@@ -488,38 +442,38 @@ def compute_alignment(repo_dir: Path,
         "verdict_signal": verdict_signal,
         "_languages": languages,
         "_claim_count": len(claims),
-        "_judgment_counts": {
-            "support": support_count, "conflict": conflict_count,
-        },
+        "_judgment_counts": {"support": support_count, "conflict": conflict_count},
     }
 
 
 # ---------------------------------------------------------------------------
-# 5. CLI 入口
+# 6. CLI 入口
 # ---------------------------------------------------------------------------
-
-def main():
+def main() -> int:
+    ensure_utf8_stdio()
     ap = argparse.ArgumentParser(description="MPV-Detector 语义对齐率检测")
     ap.add_argument("--repo-dir", required=True, help="仓库目录")
-    ap.add_argument("--readme", default="", help="声明文档路径 (可选)")
-    ap.add_argument("--output", default="", help="输出 JSON 路径 (可选)")
+    ap.add_argument("--readme", default="", help="声明文档路径（默认自动找 README）")
+    ap.add_argument("--output", default="", help="输出 JSON 路径")
     ap.add_argument("--brief", action="store_true", help="只输出摘要")
     args = ap.parse_args()
 
     repo_dir = Path(args.repo_dir)
     if not repo_dir.exists():
         print(f"[错误] 仓库目录不存在: {repo_dir}")
-        sys.exit(1)
+        return 1
 
     readme_text = None
     if args.readme:
         rp = Path(args.readme)
         if rp.exists():
-            readme_text = rp.read_text(encoding="utf-8-sig", errors="replace")
+            readme_text = read_text(rp) or ""
 
     result = compute_alignment(repo_dir, readme_text)
 
     if args.brief:
+        counts = result["_judgment_counts"]
+        unknown = len(result["claim_judgments"]) - counts["support"] - counts["conflict"]
         print(f"repo           = {result['repo']}")
         print(f"signal         = {result['verdict_signal']}")
         print(f"alignment_rate = {result['alignment_rate']}")
@@ -530,21 +484,18 @@ def main():
         for cat, facts in result["facts"].items():
             if facts:
                 print(f"  {cat}: {len(facts)} facts")
-        print(f"judgments      = support:{result['_judgment_counts']['support']} "
-              f"conflict:{result['_judgment_counts']['conflict']} "
-              f"unknown:{len(result['claim_judgments']) - result['_judgment_counts']['support'] - result['_judgment_counts']['conflict']}")
-        # 列出所有 conflict
-        conflicts = [j for j in result["claim_judgments"] if j["judgment"] == "conflict"]
-        for c in conflicts[:10]:
+        print(f"judgments      = support:{counts['support']} "
+              f"conflict:{counts['conflict']} unknown:{unknown}")
+        for c in [j for j in result["claim_judgments"] if j["judgment"] == "conflict"][:10]:
             print(f"  ⚠ conflict[{c['category']}]: {c['claim'][:120]}")
     else:
         print(json.dumps(result, ensure_ascii=False, indent=2))
 
     if args.output:
-        Path(args.output).write_text(
-            json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+        write_json(args.output, result)
         print(f"\n已写入: {args.output}")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

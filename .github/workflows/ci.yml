@@ -15,11 +15,20 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: 安装依赖
+        run: pip install -r requirements.txt
+
       - name: 语法检查
-        run: python -m compileall detector
+        run: python -m compileall -q detector
 
       - name: 配置自检（验证路径解析）
-        run: python detector/config.py
+        run: python detector/config.py > /dev/null
+
+      - name: 依赖接口自检（路径 / 子包导入 / 可选依赖）
+        run: python -m detector.deps --check
+
+      - name: 统一入口可用
+        run: python -m detector.cli --list
 
       - name: 禁止写死用户名路径
         # 曾经因写死 C:\Users\<用户名>\... 导致换机即挂，此处守住不回退
@@ -31,6 +40,24 @@ jobs:
             exit 1
           fi
           echo "OK"
+
+      - name: 禁止回退到 sys.path 注入 / 平铺导入
+        # 依赖必须统一走 detector.deps；sys.path.insert 会让包结构再次分裂
+        run: |
+          fail=0
+          hits=$(grep -rnE "^[[:space:]]*sys\.path\.(insert|append)" detector --include="*.py" || true)
+          if [ -n "$hits" ]; then
+            echo "发现 sys.path 注入（请改用包内绝对导入 from detector.xxx import ...）："
+            echo "$hits"
+            fail=1
+          fi
+          hits=$(grep -rnE "^[[:space:]]*(from[[:space:]]+(config|align_rate|sandbox_rules|behavior_monitor|docgen|scanner|deps)[[:space:]]+import|import[[:space:]]+(config|align_rate|deps)[[:space:]]*$)" detector --include="*.py" || true)
+          if [ -n "$hits" ]; then
+            echo "发现平铺导入（请改用 from detector.xxx import ...）："
+            echo "$hits"
+            fail=1
+          fi
+          exit $fail
 
       - name: 禁止混入大文件
         # 只检查「已入库」文件，避免本地被 .gitignore 排除的权重造成误报。

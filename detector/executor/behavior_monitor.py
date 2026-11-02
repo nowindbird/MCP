@@ -14,15 +14,19 @@ MPV-Detector 沙箱运行时行为监控器
   2. SIMULATE (开发): 本地 monkey-patch 拦截 subprocess/requests/open/os.getenv
   3. FIXTURE  (测试): 直接解析已保存的 strace/tcpdump 文本，无需 Docker 守护进程
 
-用法:
+用法::
+
   # 先准备规则
-  python sandbox_rules.py --repo-dir mcp插件\\某仓库 --output rules.json
+  python -m detector.cli sandbox-rules --repo-dir mcp插件/<owner>_<repo> --output rules.json
   # Docker 模式（首次会自动构建沙箱镜像）
-  python behavior_monitor.py --rules rules.json --mode docker --repo-dir mcp插件\\某仓库
+  python -m detector.cli monitor --rules rules.json --mode docker --repo-dir mcp插件/<owner>_<repo>
   # 模拟模式
-  python behavior_monitor.py --rules rules.json --mode simulate --entry-point run_server.py
+  python -m detector.cli monitor --rules rules.json --mode simulate --entry-point run_server.py
   # 固件回放模式（离线单测）
-  python behavior_monitor.py --rules rules.json --mode fixture --strace-file a.log --net-file b.txt
+  python -m detector.cli monitor --rules rules.json --mode fixture --strace-file a.log --net-file b.txt
+
+配置与路径统一来自 ``detector.deps``（strace/tcpdump 采集物落在 config 的
+``output/sandbox_work``，不再写到代码目录下）。
 """
 
 import argparse
@@ -36,19 +40,20 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+from detector.deps import (
+    CONFIG,
+    SANDBOX_IMAGE_DIR,
+    SANDBOX_WORK_DIR,
+    docker_available,
+    ensure_utf8_stdio,
+    read_json,
+    write_json,
+)
+
 # ---------------------------------------------------------------------------
 # 0. 配置加载
 # ---------------------------------------------------------------------------
-HERE = Path(__file__).resolve().parent          # detector/executor
-PROJECT_ROOT = HERE.parent                        # 项目根
-SANDBOX_DIR = HERE                                # Dockerfile/entrypoint.sh 所在（executor/）
-sys.path.insert(0, str(PROJECT_ROOT))             # 使 from config import CONFIG 可用
-
-try:
-    from config import CONFIG
-    SBX: Dict[str, Any] = CONFIG.get("sandbox", {})
-except Exception:  # 配置损坏时降级为内置默认值
-    SBX = {}
+SBX: Dict[str, Any] = CONFIG.get("sandbox", {})
 
 # 解析用默认值（config 缺失时的兜底）
 DEFAULT_OPEN_NOISE = SBX.get("open_noise_prefixes", [
@@ -595,14 +600,6 @@ def _docker(args: List[str], timeout: int = 120) -> subprocess.CompletedProcess:
                           timeout=timeout, encoding="utf-8", errors="replace")
 
 
-def docker_available() -> bool:
-    """探测 Docker 守护进程是否可用（CLI 存在 != 守护进程在跑）。"""
-    try:
-        return _docker(["info"], timeout=30).returncode == 0
-    except Exception:
-        return False
-
-
 def image_exists(image: str) -> bool:
     try:
         return _docker(["image", "inspect", image], timeout=30).returncode == 0
@@ -613,12 +610,12 @@ def image_exists(image: str) -> bool:
 def build_sandbox_image(image: Optional[str] = None) -> bool:
     """构建沙箱镜像（含 strace/tcpdump/python/node，可选 go/rust）。"""
     image = image or SBX.get("docker_image", "mpv-sandbox:latest")
-    dockerfile = SANDBOX_DIR / "Dockerfile"
+    dockerfile = SANDBOX_IMAGE_DIR / "Dockerfile"
     if not dockerfile.exists():
         print(f"[错误] 未找到 Dockerfile: {dockerfile}")
         return False
     print(f"[构建] docker build -t {image} ... (首次较慢)")
-    r = _docker(["build", "-t", image, "-f", str(dockerfile), str(SANDBOX_DIR)],
+    r = _docker(["build", "-t", image, "-f", str(dockerfile), str(SANDBOX_IMAGE_DIR)],
                 timeout=3600)
     if r.returncode != 0:
         print((r.stdout or "")[-1500:])
@@ -743,7 +740,7 @@ def run_docker(rules: Dict, repo_dir: Path,
         _docker(["volume", "create", volume], timeout=60)
 
         # 准备蜜罐文件（挂载到 /opt/honeypot，入口脚本复制到 /tmp）
-        honey_dir = _write_honeypot_fixtures(HERE / "output" / "sandbox_work")
+        honey_dir = _write_honeypot_fixtures(SANDBOX_WORK_DIR)
 
         env_args = _honeypot_env()
         env_args += [
@@ -793,8 +790,8 @@ def run_docker(rules: Dict, repo_dir: Path,
 
         # 停止抓包并收集日志
         _docker(["kill", capture], timeout=60)
-        strace_out = HERE / "output" / "sandbox_work" / f"{tag}_strace.log"
-        net_out = HERE / "output" / "sandbox_work" / f"{tag}_net.txt"
+        strace_out = SANDBOX_WORK_DIR / f"{tag}_strace.log"
+        net_out = SANDBOX_WORK_DIR / f"{tag}_net.txt"
         strace_out.parent.mkdir(parents=True, exist_ok=True)
         _docker(["cp", f"{target}:{SBX.get('strace_output', '/tmp/mpv_strace.log')}",
                  str(strace_out)], timeout=120)
@@ -831,9 +828,10 @@ def run_docker(rules: Dict, repo_dir: Path,
 # 6. CLI 入口
 # ---------------------------------------------------------------------------
 
-def main():
+def main() -> int:
+    ensure_utf8_stdio()
     ap = argparse.ArgumentParser(description="MPV-Detector 沙箱行为监控器")
-    ap.add_argument("--rules", required=True, help="sandbox_rules.py 生成的规则 JSON")
+    ap.add_argument("--rules", required=True, help="sandbox_rules 生成的规则 JSON")
     ap.add_argument("--mode", choices=["docker", "simulate", "fixture"],
                     default="docker", help="运行模式")
     # simulate
@@ -858,30 +856,33 @@ def main():
     if args.check_docker:
         ok = docker_available()
         print(f"Docker 守护进程: {'可用' if ok else '不可用'}")
-        sys.exit(0 if ok else 1)
+        return 0 if ok else 1
 
     if args.build_image:
         ok = build_sandbox_image(args.image or None)
         print(f"沙箱镜像构建: {'成功' if ok else '失败'}")
-        sys.exit(0 if ok else 1)
+        return 0 if ok else 1
 
     rules_path = Path(args.rules)
     if not rules_path.exists():
         print(f"[错误] 规则文件不存在: {args.rules}")
-        sys.exit(1)
-    rules = json.loads(rules_path.read_text(encoding="utf-8"))
+        return 1
+    rules = read_json(rules_path)
+    if not isinstance(rules, dict):
+        print(f"[错误] 规则文件不是合法 JSON 对象: {args.rules}")
+        return 1
 
     if args.mode == "simulate":
         if not args.entry_point:
             print("[错误] SIMULATE 模式需要 --entry-point")
-            sys.exit(1)
+            return 1
         report = run_simulate(rules, args.entry_point, timeout_seconds=args.timeout or 60)
     elif args.mode == "fixture":
         report = run_fixture(rules, args.strace_file, args.net_file)
     else:
         if not args.repo_dir:
             print("[错误] DOCKER 模式需要 --repo-dir")
-            sys.exit(1)
+            return 1
         report = run_docker(rules, Path(args.repo_dir),
                             run_command=args.run_command or None,
                             timeout_seconds=args.timeout or None,
@@ -891,17 +892,16 @@ def main():
     report.print_summary()
 
     if args.output:
-        Path(args.output).write_text(
-            json.dumps(report.to_dict(), ensure_ascii=False, indent=2),
-            encoding="utf-8")
+        write_json(args.output, report.to_dict())
         print(f"报告已写入: {args.output}")
 
     # 退出码: 2=MALICIOUS, 1=需人工审核, 0=通过
     if report.final_verdict == "MALICIOUS":
-        sys.exit(2)
+        return 2
     if report.review_requested:
-        sys.exit(1)
+        return 1
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

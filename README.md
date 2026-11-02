@@ -9,7 +9,7 @@ arXiv:2602.06547) 的思路，把检测拆成一条可分段运行的流水线�
 采集 → 代码获取 → 静态扫描 → 语义分析 → 沙箱执行 → 汇总统计
 ```
 
-> 论文原文见 `malicious-agent-skills-2602.06547.pdf`，中文翻译见 `论文_中文翻译.md`。
+> 论文原文与中文翻译见 `项目相关文档/`。
 
 ---
 
@@ -30,20 +30,35 @@ arXiv:2602.06547) 的思路，把检测拆成一条可分段运行的流水线�
 ## 目录结构
 
 ```
-├── detector/                 # ★检测器主包（所有代码在这里）
-│   ├── cli.py                #   统一入口：python -m detector.cli <子命令>
-│   ├── config.py             #   配置中心（路径/阈值/LLM/沙箱）
-│   ├── crawler/              #   采集：GitHub MCP 仓库抓取
-│   ├── fetcher/              #   获取：tarball / tree+raw 多通道拉代码
-│   ├── scanner/              #   扫描：静态规则 + 规范化 + 汇总
-│   ├── analyzer/             #   语义：docgen / align_rate / finetune
-│   ├── executor/             #   沙箱：mcp_probe / behavior_monitor / sandbox_rules
-│   └── pipeline/             #   端到端编排 run_flow
-├── mcp插件/                   # 插件元数据（104 个 <owner>_<repo>/info.json）
+├── detector/                  # ★检测器主包（所有代码在这里）
+│   ├── deps.py                #   唯一依赖接口：路径 / IO / 仓库遍历 / HTTP / LLM
+│   ├── config.py              #   纯配置：路径、阈值、端点默认值
+│   ├── cli.py                 #   统一入口：python -m detector.cli <子命令>
+│   ├── crawler/               #   采集：GitHub MCP 仓库抓取
+│   ├── fetcher/               #   获取：清单驱动的 tarball / tree+raw 拉取
+│   ├── scanner/               #   扫描：静态规则 + 规范化/汇总/报告
+│   ├── analyzer/              #   语义：docgen / align_rate / finetune
+│   ├── executor/              #   沙箱：mcp_probe / behavior_monitor / sandbox_rules
+│   └── pipeline/              #   编排：pipeline（步骤清单）/ run_flow（一键跑完）
+├── mcp插件/                    # 插件元数据（<owner>_<repo>/info.json）
 ├── MaliciousAgentSkillsBench/ # 论文官方基准（上游开源数据集，非本项目代码）
-├── mcp_doc_finetune/         # 微调语料与产物（权重不入库，见下）
-└── 一键跑完.ps1               # Windows 一键入口
+├── mcp_doc_finetune/          # 微调语料与产物（权重不入库，见下）
+└── 一键跑完.ps1                # Windows 一键入口（薄封装 detector.cli flow）
 ```
+
+### 依赖约定（重要）
+
+所有跨模块依赖只走一个文件：**`detector/deps.py`**。
+
+```python
+from detector.deps import CONFIG, write_json, GitHubClient, iter_repo_files
+```
+
+- 新增外部依赖 / 端点 / 路径，**只改 `deps.py` + `config.py`**；
+- 代码里**不允许**再出现 `sys.path.insert`、`from config import ...` 之类的平铺导入，
+  也不要自己拼 `output/xxx` 路径（CI 会拦住这类回退）；
+- 静态扫描的跳过目录、扩展名、文件大小上限等"口径"集中定义，scanner / fetcher /
+  docgen / align 共用同一套，避免各写一份导致结果不可比。
 
 ---
 
@@ -62,47 +77,49 @@ pip install -r requirements.txt
 ollama pull qwen3-coder:30b
 ```
 
-### 3. 准备被检代码
+### 3. 拉取被检代码
 
 仓库自带的 `mcp插件/` 是**插件元数据**（`info.json`），不是完整源码。
-要跑完整流水线，需先把仓库代码拉下来：
+要跑完整流水线，需先把仓库代码拉下来（缓存默认落 `output/cache/`）：
 
 ```bash
-python -m detector.cli fetch-tarballs --help     # 查看拉取方式
-python -m detector.cli crawl --help              # 或自己抓取更多插件
+# 清单 CSV 需含 full_name 列（可带 branch / cache_dir）
+python -m detector.cli fetch --manifest output/scan_manifest.csv
+python -m detector.cli fetch --repos modelcontextprotocol/servers --method tarball
 ```
 
 ### 4. 运行
 
-统一入口（子命令透传给对应模块）：
-
 ```bash
 python -m detector.cli scan --manifest output/shard1.csv --out-dir output/scan_results
-python -m detector.cli docgen --backend openai
-python -m detector.cli align --repo-dir mcp插件/<owner>_<repo>
+python -m detector.cli summary --stage all          # 规范化 + 汇总 + 报告
+python -m detector.cli docgen --repo-list output/targets.txt --out-dir output/gen_docs
+python -m detector.cli align --repo-dir mcp插件/<owner>_<repo> --brief
 python -m detector.cli sandbox-rules --repo-dir mcp插件/<owner>_<repo> --output rules.json
 python -m detector.cli monitor --rules rules.json --mode docker --repo-dir mcp插件/<owner>_<repo>
 ```
 
-可用子命令见 `detector/cli.py` 的 `COMMANDS` 字典，或 `detector/README.md`。
+可用子命令见 `python -m detector.cli --list`；分步流水线见 `detector/README.md`。
 
-**Windows 用户**可直接双击运行 `一键跑完.ps1`，它会串起
+**Windows 用户**可直接运行 `一键跑完.ps1`，它会串起
 `docgen → align → verdict → report` 并支持断点续跑。
 
 ---
 
 ## 配置：不写死路径
 
-所有路径与端点都在 `detector/config.py`，优先级为
-**环境变量 > 项目内默认 > 历史遗留路径**。换机器无需改代码：
+所有路径与端点都在 `detector/config.py`，优先级为 **环境变量 > 项目内默认目录**。
+换机器无需改代码：
 
 | 环境变量 | 说明 | 默认值 |
 |---|---|---|
 | `MPV_LARGE_REPO_SOURCE` | 完整仓库代码根目录 | 项目内 `mcp插件/` |
 | `MPV_MEDIUM_REPO_META` | 插件元数据目录 | 项目内 `mcp插件/` |
 | `MPV_OUTPUT_DIR` | 输出根目录 | 项目内 `output/` |
+| `MPV_CACHE_ROOT` | 代码获取缓存根 | 项目内 `output/cache/` |
+| `MPV_FETCH_METHOD` | 获取通道 `auto/tarball/tree` | `auto` |
 | `OLLAMA_HOST` | Ollama 地址 | `http://localhost:11434` |
-| `MPV_MODEL` | 模型名 | `qwen3-coder:30b` |
+| `MPV_MODEL` | 默认模型名 | `qwen3-coder:30b` |
 | `GITHUB_TOKEN` | 提高 GitHub API 限流 | 空 |
 
 > ⚠️ **请勿在代码中写入绝对路径**（如 `C:\Users\xxx\...`）。需要新路径请加环境变量，见 `CONTRIBUTING.md`。
