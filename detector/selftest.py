@@ -24,12 +24,14 @@ def run_tests(verbosity: int = 2, pattern: str = "test_*.py") -> int:
     if not TESTS_DIR.is_dir():
         print(f"[selftest] 未找到测试目录: {TESTS_DIR}")
         return 1
-    # 保证 `import detector` 可用（pip install -e 之外的场景）
-    import sys
-
-    root = str(PROJECT_ROOT)
-    if root not in sys.path:
-        sys.path.insert(0, root)
+    # 保证 `import detector` 可用（仅在直接运行、包未安装时才注入路径）
+    try:
+        import detector  # noqa: F401
+    except ImportError:
+        import sys
+        root = str(PROJECT_ROOT)
+        if root not in sys.path:
+            sys.path.insert(0, root)
     suite = unittest.defaultTestLoader.discover(str(TESTS_DIR), pattern=pattern)
     result = unittest.TextTestRunner(verbosity=verbosity).run(suite)
     print(f"\n[selftest] 用例 {result.testsRun} 个，"
