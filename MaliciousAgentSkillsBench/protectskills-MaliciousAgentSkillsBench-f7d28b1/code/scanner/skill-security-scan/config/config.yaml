@@ -1,3 +1,0 @@
-rules:
-  rules_file: config/rules.yaml
-  whitelist_file: config/whitelist.yaml

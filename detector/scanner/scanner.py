@@ -37,7 +37,7 @@ from detector.deps import (
     read_text,
     write_json,
 )
-from detector.ui import print_repo_row
+from detector.ui import print_repo_row, progress_job
 
 BINARY_BYTES = b"\x00"  # 二进制文件检测用字节
 
@@ -354,6 +354,10 @@ def main():
                 for i, cache in to_scan:
                     future_to_idx[pool.submit(scan_repo_safe, cache)] = i
                 done = 0
+                progress = progress_job("扫描仓库")
+                if progress:
+                    task = progress.add_task("scan", total=len(to_scan))
+                    progress.start()
                 for fut in as_completed(future_to_idx):
                     i = future_to_idx[fut]
                     cache = repos[i]
@@ -367,8 +371,13 @@ def main():
                     for h in res["hits"]:
                         sev[h["severity"]] = sev.get(h["severity"], 0) + 1
                     done += 1
-                    print(f"[{done}/{len(to_scan)}] ", end="")
-                    print_repo_row(full, res["files_scanned"], len(res["hits"]), sev)
+                    if progress:
+                        progress.update(task, completed=done, description=f"扫描仓库 {done}/{len(to_scan)}")
+                    else:
+                        print(f"[{done}/{len(to_scan)}] ", end="")
+                        print_repo_row(full, res["files_scanned"], len(res["hits"]), sev)
+                if progress:
+                    progress.stop()
 
             write_json(out_dir / "_summary.json", results)
             print(f"batch done: {len(results)} repos -> {out_dir}")

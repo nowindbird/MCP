@@ -36,6 +36,7 @@ ACTIONS = [
     ("扫描单个仓库 (scan)", "scan"),
     ("扫描结果汇总 (summary)", "summary"),
     ("生成 HTML 报告 (report-html)", "report-html"),
+    ("查看已有结果摘要", "peek"),
     ("跑完整流程 (flow)", "flow"),
     ("查看所有子命令", "list"),
     ("退出", "quit"),
@@ -173,6 +174,41 @@ def main() -> int:
             console.print(f"[green]报告已生成: {out}[/green]")
             console.print(f"  仓库 {stats['total']}，"
                           f"verdict {stats['by_verdict']}")
+
+        elif action == "peek":
+            from pathlib import Path
+            import json
+            results_dir = SCAN_OUTPUT_DIR
+            if not results_dir.exists():
+                console.print(f"[yellow]结果目录不存在: {results_dir}[/yellow]")
+                continue
+            files = list(results_dir.glob("*.json"))
+            files = [f for f in files if not f.name.startswith("_")]
+            if not files:
+                console.print("[yellow]无扫描结果[/yellow]")
+                continue
+            console.print(f"[bold]扫描结果摘要（共 {len(files)} 个仓库）[/bold]")
+            rows = []
+            for f in files[:20]:
+                try:
+                    d = json.loads(f.read_text(encoding="utf-8"))
+                    rows.append((d.get("repo", ""), d.get("verdict", ""),
+                                 d.get("files_scanned", 0), len(d.get("hits", []))))
+                except Exception:
+                    continue
+            t = Table(show_header=True, header_style="bold")
+            t.add_column("仓库")
+            t.add_column("verdict")
+            t.add_column("文件数", justify="right")
+            t.add_column("命中数", justify="right")
+            for repo, verdict, files_n, hits_n in rows:
+                vcolor = {"malicious": "red", "suspicious": "yellow",
+                          "benign": "green"}.get(verdict, "")
+                t.add_row(repo, f"[{vcolor}]{verdict}[/{vcolor}]" if vcolor else verdict,
+                          str(files_n), str(hits_n))
+            console.print(t)
+            if len(files) > 20:
+                console.print(f"[dim]... 还有 {len(files)-20} 个未显示[/dim]")
 
         elif action == "flow":
             targets = Prompt.ask("目标清单（每行 owner/repo）", default="output/targets.txt").strip().strip('"').strip("'")

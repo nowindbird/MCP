@@ -5,6 +5,8 @@
 # ============================================================
 
 # ---- 模型与适配器权重（从 Hugging Face 重新下载，或按脚本重新训练）----
+mcp_doc_finetune/models/
+mcp_doc_finetune/adapter_*/
 mcp_doc_finetune/**/*.safetensors
 mcp_doc_finetune/**/*.bin
 mcp_doc_finetune/**/*.pt

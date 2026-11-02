@@ -75,10 +75,13 @@ def _render_html(stats: dict) -> str:
     pattern_names = [k for k, _ in stats["top_patterns"]]
     pattern_values = [v for _, v in stats["top_patterns"]]
 
-    # 仓库明细行（只取前 200 个命中最多的，避免 HTML 过大）
+    # 仓库明细行（只取前 50 个命中最多的，每个仓库只显示前 5 条命中，避免 HTML 过大）
     rows_html = []
-    for r in stats["repos"][:200]:
-        hits_str = json.dumps(r["hits"], ensure_ascii=False)
+    for r in stats["repos"][:50]:
+        hits_preview = r["hits"][:5]
+        hits_json = json.dumps(hits_preview, ensure_ascii=False)
+        more = len(r["hits"]) - 5
+        more_str = f'<div class="more">+{more} more hits</div>' if more > 0 else ""
         rows_html.append(f"""
         <tr onclick="toggleHits(this)">
           <td class="repo">{r['repo']}</td>
@@ -88,7 +91,8 @@ def _render_html(stats: dict) -> str:
         </tr>
         <tr class="hits-row" style="display:none">
           <td colspan="4">
-            <pre>{hits_str}</pre>
+            <pre>{hits_json}</pre>
+            {more_str}
           </td>
         </tr>""")
 
@@ -126,6 +130,7 @@ def _render_html(stats: dict) -> str:
   .v.not_scanned {{ background: #e9ecef; color: #868e96; }}
   .hits-row pre {{ background: #f8f9fa; padding: 12px; border-radius: 4px;
                    font-size: 12px; overflow-x: auto; }}
+  .hits-row .more {{ color: #868e96; font-size: 12px; margin-top: 8px; }}
   tr:hover {{ background: #f1f3f5; cursor: pointer; }}
 </style>
 </head>
@@ -146,7 +151,7 @@ def _render_html(stats: dict) -> str:
   <div id="chart-pattern" class="chart" style="grid-column: 1 / span 2"></div>
 </div>
 
-<h2>仓库明细（按命中数 TOP 200，点击行展开命中）</h2>
+<h2>仓库明细（按命中数 TOP 50，点击行展开前 5 条命中）</h2>
 <table>
   <thead><tr><th>仓库</th><th>verdict</th><th class="num">文件数</th><th class="num">命中数</th></tr></thead>
   <tbody>{"".join(rows_html)}</tbody>
